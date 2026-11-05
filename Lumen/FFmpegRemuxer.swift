@@ -19,16 +19,16 @@ enum FFmpegRemuxError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .openInputFailed(let detail): return "无法打开源文件：\(detail)"
-        case .findStreamInfoFailed(let detail): return "无法读取源文件信息：\(detail)"
-        case .noVideoStream: return "文件里没有视频轨"
-        case .unsupportedVideoCodec(let codec): return "视频编码 \(codec) 无法用系统播放器播放"
-        case .dolbyVisionProfile7: return "Profile 7（双层高动态范围）暂不支持系统原生播放"
-        case .noCompatibleAudio: return "没有系统播放器可解码的音轨"
-        case .cannotCreateOutput(let detail): return "无法创建输出文件：\(detail)"
-        case .writeHeaderFailed(let detail): return "写入 MP4 文件头失败：\(detail)"
-        case .writeFailed(let detail): return "写入 MP4 失败：\(detail)"
-        case .cancelled: return "重封装已取消"
+        case .openInputFailed(let detail): return String(localized: "无法打开源文件：\(detail)")
+        case .findStreamInfoFailed(let detail): return String(localized: "无法读取源文件信息：\(detail)")
+        case .noVideoStream: return String(localized: "文件里没有视频轨")
+        case .unsupportedVideoCodec(let codec): return String(localized: "视频编码 \(codec) 无法用系统播放器播放")
+        case .dolbyVisionProfile7: return String(localized: "Profile 7（双层高动态范围）暂不支持系统原生播放")
+        case .noCompatibleAudio: return String(localized: "没有系统播放器可解码的音轨")
+        case .cannotCreateOutput(let detail): return String(localized: "无法创建输出文件：\(detail)")
+        case .writeHeaderFailed(let detail): return String(localized: "写入 MP4 文件头失败：\(detail)")
+        case .writeFailed(let detail): return String(localized: "写入 MP4 失败：\(detail)")
+        case .cancelled: return String(localized: "重封装已取消")
         }
     }
 }
@@ -51,7 +51,7 @@ struct FFmpegRemuxResult {
     var warnings: [String]
     var embeddedSubtitles: [FFmpegEmbeddedSubtitle]
 
-    /// 按与兼容播放相同的策略挑内封中文字幕（外挂字幕文件优先的判断在调用方）
+    /// 按与直读播放相同的策略挑内封中文字幕（外挂字幕文件优先的判断在调用方）
     func chineseSubtitleCues() -> [SubtitleCue]? {
         let candidates = embeddedSubtitles.map { sub in
             (sub, MPVTrack(id: 0, type: "sub", lang: sub.lang.isEmpty ? nil : sub.lang,
@@ -194,7 +194,7 @@ final class FFmpegRemuxer {
                         throw FFmpegRemuxError.unsupportedVideoCodec(Self.codecName(codecID))
                     }
                 } else {
-                    warnings.append("多余的视频轨已跳过")
+                    warnings.append(String(localized: "多余的视频轨已跳过"))
                 }
             case 1: // AVMEDIA_TYPE_AUDIO
                 hasAudioStream = true
@@ -219,21 +219,21 @@ final class FFmpegRemuxer {
 
         guard let videoIdx = videoIndex else { throw FFmpegRemuxError.noVideoStream }
 
-        // Profile 7（BL+EL 双层）AVPlayer 不能直通 → 整片降级兼容播放（前人坑 7）
+        // Profile 7（BL+EL 双层）AVPlayer 不能直通 → 整片降级直读播放（前人坑 7）
         if let dv = dvInfo, dv.profile == 7 {
-            AppLog.add("播放", "高动态范围 Profile 7（双层）→ 降级兼容播放")
+            AppLog.add("播放", "高动态范围 Profile 7（双层）→ 降级直读播放")
             throw FFmpegRemuxError.dolbyVisionProfile7
         }
         // 有音轨却一条都进不了 MP4（如只有 TrueHD/DTS）→ 整片降级，避免无声播放（前人坑 4）
         if hasAudioStream, audioIndices.isEmpty {
-            AppLog.add("播放", "音轨均为系统不解码格式（\(skippedAudioNames.joined(separator: "/"))）→ 降级兼容播放")
+            AppLog.add("播放", "音轨均为系统不解码格式（\(skippedAudioNames.joined(separator: "/"))）→ 降级直读播放")
             throw FFmpegRemuxError.noCompatibleAudio
         }
         if !skippedAudioNames.isEmpty {
-            warnings.append("部分音轨格式系统不支持，已跳过：\(Set(skippedAudioNames).joined(separator: "、"))")
+            warnings.append(String(localized: "部分音轨格式系统不支持，已跳过：\(Set(skippedAudioNames).joined(separator: "、"))"))
         }
         if hasGraphicSubtitle {
-            warnings.append("内封图形字幕（PGS 等）无法在系统播放中显示，可切换兼容播放查看")
+            warnings.append(String(localized: "内封图形字幕（PGS 等）无法在系统播放中显示，可切换直读播放查看"))
         }
 
         // ---- 建输出 ----
@@ -270,7 +270,7 @@ final class FFmpegRemuxer {
         let inVideo = inStreams[videoIdx]
         guard let outVideo = makeOutputStream(from: inVideo),
               let outVideoPar = outVideo.pointee.codecpar else {
-            throw FFmpegRemuxError.cannotCreateOutput("视频流创建失败")
+            throw FFmpegRemuxError.cannotCreateOutput(String(localized: "视频流创建失败"))
         }
         // DOVI side data 搬运自检（V2）：parameters_copy 理应带过来，缺失时手动从输入 codecpar 搬
         if let doviData = Self.doviSideData(inVideo.pointee.codecpar) {
@@ -298,7 +298,7 @@ final class FFmpegRemuxer {
                 outStream.pointee.codecpar.pointee.codec_tag = 0
                 outStreamByInIndex[i] = outStream
             } else {
-                warnings.append("一条音轨创建失败，已跳过")
+                warnings.append(String(localized: "一条音轨创建失败，已跳过"))
             }
         }
         // 字幕只提取不写流（旁路 cues）
@@ -322,7 +322,7 @@ final class FFmpegRemuxer {
         // ---- 包循环（官方 remuxing.c 同款结构；错误即退出） ----
         guard let packet = av_packet_alloc() else {
             avio_closep(&outFmt.pointee.pb)
-            throw FFmpegRemuxError.cannotCreateOutput("av_packet_alloc 失败")
+            throw FFmpegRemuxError.cannotCreateOutput(String(localized: "av_packet_alloc 失败"))
         }
         defer { var p: UnsafeMutablePointer<AVPacket>? = packet; av_packet_free(&p) }
 
@@ -377,7 +377,7 @@ final class FFmpegRemuxer {
         avio_closep(&outFmt.pointee.pb)
         guard trailerRet >= 0, wrotePackets > 0 else {
             try? FileManager.default.removeItem(at: output)
-            throw FFmpegRemuxError.writeFailed(readError != 0 ? Self.errorString(readError) : "没有写出任何数据包")
+            throw FFmpegRemuxError.writeFailed(readError != 0 ? Self.errorString(readError) : String(localized: "没有写出任何数据包"))
         }
         progress(1.0)
 
@@ -389,7 +389,7 @@ final class FFmpegRemuxer {
             verified = check.hasDoviConfig || check.videoTag == 0x3168_7664 || check.videoTag == 0x6568_7664
             AppLog.add("播放", "重封装自检：视频入口=\(Self.tagString(check.videoTag)) 动态元数据盒=\(check.hasDoviConfig ? "有" : "无") 音轨=\(check.audioSummary)")
             if !verified {
-                warnings.append("高动态范围配置未写入输出文件（自检未通过），将按普通 HDR 播放")
+                warnings.append(String(localized: "高动态范围配置未写入输出文件（自检未通过），将按普通 HDR 播放"))
             }
         } else {
             AppLog.add("播放", "重封装自检：视频入口=\(Self.tagString(check.videoTag)) 音轨=\(check.audioSummary)")
@@ -414,7 +414,7 @@ final class FFmpegRemuxer {
     private struct OutputCheck {
         var videoTag: UInt32 = 0
         var hasDoviConfig = false
-        var audioSummary: String = "无"
+        var audioSummary: String = String(localized: "无")
     }
 
     /// 回读刚写出的 MP4：确认视频 sample entry、DOVI 配置盒与音轨构成（只读文件头，开销可忽略）
@@ -504,7 +504,7 @@ final class FFmpegRemuxer {
 
     private static func codecName(_ id: AVCodecID) -> String {
         guard let desc = avcodec_descriptor_get(id), let namePtr = desc.pointee.name else {
-            return "未知编码"
+            return String(localized: "未知编码")
         }
         return String(cString: namePtr)
     }
