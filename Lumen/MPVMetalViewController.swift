@@ -26,7 +26,7 @@ final class MPVMetalViewController: UIViewController {
     var playDelegate: MPVPlayerDelegate?
 
     private lazy var queue = DispatchQueue(label: "lumen.mpv.events", qos: .userInitiated)
-    private var pendingLoad: (url: URL, startAt: Double?)?
+    private var pendingLoad: URL?
     private var wasPlayingBeforeBackground = false
 
     override func viewDidLoad() {
@@ -51,7 +51,7 @@ final class MPVMetalViewController: UIViewController {
 
         if let pending = pendingLoad {
             pendingLoad = nil
-            loadFile(pending.url, startAt: pending.startAt)
+            loadFile(pending)
         }
     }
 
@@ -139,16 +139,27 @@ final class MPVMetalViewController: UIViewController {
 
     // MARK: - 播放控制（供 MPVPlayerModel 调用）
 
-    func loadFile(_ url: URL, startAt: Double? = nil) {
+    /// 只传两个参数。mpv 0.38 起 loadfile 的语法是 loadfile <url> [<flags> [<index> [<options>]]]，
+    /// 第三位是播放列表 index（整数）：把 "start=…" 塞进第三位会被引擎直接拒为
+    /// MPV_ERROR_INVALID_PARAMETER，文件根本不加载、界面只剩黑屏 00:00（1.2.1 修复的回归根因，
+    /// 依据：mpv 官方手册 loadfile 条目对 0.38 参数位变更的警告）。
+    /// 续播位置改由模型在 MPV_EVENT_FILE_LOADED 后用 seek 落位，不再走 loadfile 参数。
+    /// 本地文件传裸路径（与 sub-add 的用法一致，避免百分号编码干扰）；网络直链才传完整 URL 串。
+    /// 命令被拒时除记日志（带实际传入的目标串）外，还经 delegate 通知模型点亮界面报错。
+    func loadFile(_ url: URL) {
         guard mpv != nil else {
-            pendingLoad = (url, startAt)
+            pendingLoad = url
             return
         }
-        var args: [String?] = [url.absoluteString, "replace"]
-        if let startAt, startAt > 3 {
-            args.append("start=\(String(format: "%.2f", startAt))")
+        let target = url.isFileURL ? url.path : url.absoluteString
+        let status = command("loadfile", args: [target, "replace"])
+        if status < 0 {
+            let message = String(cString: mpv_error_string(status))
+            AppLog.add("播放", "直读加载失败（loadfile 返回 \(message)），目标：\(target)")
+            forwardToDelegate { delegate, handle in
+                delegate.mpvLoadFailed(mpv: handle, error: message)
+            }
         }
-        command("loadfile", args: args)
     }
 
     func stopPlayback() {
@@ -286,8 +297,10 @@ final class MPVMetalViewController: UIViewController {
 
     // MARK: - 命令
 
-    func command(_ command: String, args: [String?] = [], checkForErrors: Bool = true) {
-        guard mpv != nil else { return }
+    /// 返回 mpv_command 的原始状态码（负数即错误码），调用方需要区分成败时可据此处理
+    @discardableResult
+    func command(_ command: String, args: [String?] = [], checkForErrors: Bool = true) -> CInt {
+        guard mpv != nil else { return -1 }
         var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
         defer {
             for ptr in cargs where ptr != nil {
@@ -298,6 +311,7 @@ final class MPVMetalViewController: UIViewController {
         if checkForErrors {
             checkError(returnValue, command)
         }
+        return returnValue
     }
 
     private func makeCArgs(_ command: String, _ args: [String?]) -> [String?] {
