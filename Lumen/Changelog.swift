@@ -15,6 +15,16 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.2", date: "2026-11-05", items: [
+            Item(category: "新增", text: "打开即播：点开视频直接播放，不再先等待重封装；重封装保留为「原生模式」，可在播放器更多设置里手动开启"),
+            Item(category: "修复", text: "播放控件（包括关闭按钮）常驻不隐藏：现已统一显隐，播放中 3.5 秒无操作自动隐藏，点按画面唤出，暂停时保持显示"),
+            Item(category: "新增", text: "双字幕：内封字幕全列表可选，主字幕与副字幕可同时显示；默认优先简体中文，选择按剧集与全局记忆"),
+            Item(category: "新增", text: "加载本地字幕（SRT / ASS / SSA / VTT），字幕字号可调"),
+            Item(category: "新增", text: "音轨选择标注编码格式（如 E-AC3、AAC、DTS）与语言，选择会记住"),
+            Item(category: "新增", text: "跳过片头片尾：片头与片尾时长可设，开播自动跳过片头，片尾可跳过或自动连播下一集"),
+            Item(category: "新增", text: "章节标记与章节跳转、带剧照的选集面板、拖动进度时显示画面预览；上一集 / 下一集与快退 / 快进按钮可在设置里开关"),
+            Item(category: "新增", text: "界面语言跟随系统语言（简体中文 / English）"),
+        ]),
         Entry(version: "1.1", date: "2026-11-05", items: [
             Item(category: "新增", text: "双引擎播放：MKV 等格式先无损重封装后用系统播放器播放，原生输出高动态范围与空间音频；系统不支持的格式自动切换兼容播放，直接读取原文件"),
             Item(category: "新增", text: "兼容播放控制层：播放/暂停、进度拖动、音轨与字幕菜单、倍速菜单，双击两侧快退/快进 10 秒"),
@@ -62,11 +72,11 @@ struct ChangelogView: View {
                     ForEach(entry.items.indices, id: \.self) { index in
                         let item = entry.items[index]
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(item.category)
+                            Text(LocalizedStringKey(item.category))
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 30, alignment: .leading)
-                            Text(item.text)
+                            Text(LocalizedStringKey(item.text))
                                 .font(.subheadline)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -77,7 +87,7 @@ struct ChangelogView: View {
                             .font(.headline)
                             .foregroundStyle(.primary)
                             .textCase(nil)
-                        Text(entry.date)
+                        Text(LocalizedStringKey(entry.date))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
