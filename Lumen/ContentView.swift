@@ -1308,10 +1308,10 @@ _currentItem = State(initialValue: item)
 
 private var episodes: [MediaItem] { store.episodesInSeries(of: currentItem)}
 private var preferenceScope: String {
-EpisodeParser.parse(currentItem.name)?.show?? currentItem.name
+EpisodeParser.parse(currentItem.name)?.show ?? currentItem.name
 }
-private var hasPrevious: Bool { store.previousInSeries(before: currentItem)!= nil}
-private var hasNext: Bool { store.nextInSeries(after: currentItem)!= nil}
+private var hasPrevious: Bool { store.previousInSeries(before: currentItem) != nil}
+private var hasNext: Bool { store.nextInSeries(after: currentItem) != nil}
 
 var body: some View {
 ZStack {
@@ -1330,8 +1330,8 @@ stillProvider: stillImage(for:),
 avModel: avModel, mpvModel: mpvModel,
 onClose: { dismiss()},
 onSelectEpisode: { switchToEpisode($0)},
-onPrevious: hasPrevious? { goPrevious()}: nil,
-onNext: hasNext? { goNextManual()}: nil,
+onPrevious: hasPrevious ? { goPrevious() } : nil,
+onNext: hasNext ? { goNextManual() } : nil,
 onLoadLocalSubtitle: { loadLocalSubtitle()})
 .id(currentItem.id)
 } else if let failure {
@@ -1369,7 +1369,7 @@ OrientationHelper.lockToPortrait()
 }
 .onChange(of: nativeMode) { _, newValue in
 // 在播放器更多设置或设置页切换模式：当前视频按新模式重新载入
-guard engine!= nil else { return}
+guard engine != nil else { return}
 notice = newValue
 ? String(localized: "已切换原生模式")
 : String(localized: "已切换直读播放")
@@ -1434,14 +1434,14 @@ failure = String(localized: "无法读取这个文件（书签失效或链接不
 return
 }
 externalSubURL = store.externalSubtitleURL(for: target)
-let nextExists = store.nextInSeries(after: target)!= nil
+let nextExists = store.nextInSeries(after: target) != nil
 avModel.outroAdvanceAvailable = nextExists
 mpvModel.outroAdvanceAvailable = nextExists
 if nativeMode {
 startNative(url: url, item: target)
 } else {
 // 默认路线：直读直放，点开即播，不做任何预处理
-engine =.mpv(url)
+engine = .mpv(url)
 }
 }
 
@@ -1449,9 +1449,9 @@ engine =.mpv(url)
 /// 重封装不可用时提示并改直读（不静默、不阻塞默认路线）
 private func startNative(url: URL, item target: MediaItem) {
 let ext = url.pathExtension.lowercased()
-if target.urlString!= nil || ["mp4", "mov", "m4v"].contains(ext) {
-nativeOptions = externalOption(for: target).map { [$0]}?? []
-engine =.avPlayer(url)
+if target.urlString != nil || ["mp4", "mov", "m4v"].contains(ext) {
+nativeOptions = externalOption(for: target).map { [$0] } ?? []
+engine = .avPlayer(url)
 return
 }
 AppLog.add("播放", "\(target.name)：原生模式，先无损重封装")
@@ -1480,21 +1480,21 @@ score: track.subtitleDefaultScore,
 cues: sub.cues)
 }
 nativeOptions = options
-engine =.avPlayer(result.outputURL)
-if!warnings.isEmpty { showWarnings = true}
+engine = .avPlayer(result.outputURL)
+if !warnings.isEmpty { showWarnings = true}
 } catch let error as FFmpegRemuxError {
 guard currentItem.id == target.id else { return}
 remuxProgress = nil
-if error ==.cancelled { return}
-AppLog.add("播放", "\(target.name)：原生模式重封装不可用（\(error.errorDescription?? "")），改直读播放")
+if error == .cancelled { return}
+AppLog.add("播放", "\(target.name)：原生模式重封装不可用（\(error.errorDescription ?? "")），改直读播放")
 notice = String(localized: "原生模式不可用，已切换直读播放")
-engine =.mpv(url)
+engine = .mpv(url)
 } catch {
 guard currentItem.id == target.id else { return}
 remuxProgress = nil
 AppLog.add("播放", "\(target.name)：原生模式重封装异常（\(error.localizedDescription)），改直读播放")
 notice = String(localized: "原生模式不可用，已切换直读播放")
-engine =.mpv(url)
+engine = .mpv(url)
 }
 }
 }
@@ -1509,7 +1509,7 @@ score: Int.max, cues: cues)
 }
 
 private func switchToEpisode(_ target: MediaItem) {
-guard target.id!= currentItem.id else { return}
+guard target.id != currentItem.id else { return}
 avModel.stop()
 mpvModel.stop()
 currentItem = target
@@ -1520,7 +1520,7 @@ start()
 
 /// 连播：自动触发（播完/片尾）受「自动连播下一集」设置约束；手动点跳过片尾则直接切
 private func advanceToNext(manual: Bool) {
-if!manual,
+if !manual,
 UserDefaults.standard.object(forKey: "settings.autoNext") as? Bool == false { return}
 guard let next = store.nextInSeries(after: currentItem) else { return}
 AppLog.add("播放", "连播下一集：\(next.name)")
@@ -1604,8 +1604,8 @@ private var isMPV: Bool {
 if case.mpv = engine { return true}
 return false
 }
-private var activePaused: Bool { isMPV? mpvModel.isPaused: avModel.isPaused}
-private var activeError: String? { isMPV? mpvModel.errorMessage: avModel.errorMessage}
+private var activePaused: Bool { isMPV ? mpvModel.isPaused : avModel.isPaused}
+private var activeError: String? { isMPV ? mpvModel.errorMessage : avModel.errorMessage}
 private var anyPanelOpen: Bool { chromeSuspended || showAVSubtitlePanel || showAVEpisodes}
 
 private struct HideKey: Equatable {
@@ -1622,7 +1622,7 @@ if controlsVisible {
 topChrome
 .transition(.opacity)
 }
-if!isMPV, avModel.outroPromptVisible {
+if !isMPV, avModel.outroPromptVisible {
 avOutroButton
 }
 }
@@ -1631,7 +1631,7 @@ avOutroButton
 suspended: anyPanelOpen, paused: activePaused)) {
 guard controlsVisible,!activePaused,!anyPanelOpen else { return}
 try? await Task.sleep(for:.seconds(3.5))
-guard!Task.isCancelled else { return}
+guard !Task.isCancelled else { return}
 withAnimation(.easeInOut(duration: 0.3)) { controlsVisible = false}
 }
 .task(id: engine) {
@@ -1648,14 +1648,14 @@ preferenceScope: preferenceScope)
 }
 .task(id: notice) {
 currentNotice = notice
-guard notice!= nil else { return}
+guard notice != nil else { return}
 controlsVisible = true
 interactionSeed &+= 1
 try? await Task.sleep(for:.seconds(4))
-if!Task.isCancelled { currentNotice = nil}
+if !Task.isCancelled { currentNotice = nil}
 }
 .onChange(of: activeError) { _, newValue in
-if newValue!= nil {
+if newValue != nil {
 controlsVisible = true
 interactionSeed &+= 1
 }
@@ -1694,7 +1694,7 @@ onSelectEpisode(picked)
 
 /// 任意交互后调用：控件未显示则淡入，并重置自动隐藏计时
 private func poke() {
-if!controlsVisible {
+if !controlsVisible {
 withAnimation(.easeInOut(duration: 0.25)) { controlsVisible = true}
 }
 interactionSeed &+= 1
@@ -1743,7 +1743,7 @@ Text(title)
 Spacer()
 VStack(alignment:.trailing, spacing: 8) {
 HStack(spacing: 8) {
-if!isMPV {
+if !isMPV {
 if showPrevNextButtons, let onPrevious {
 chromeButton("backward.end.fill", label: "上一集") { onPrevious()}
 }
@@ -1753,7 +1753,7 @@ chromeButton("forward.end.fill", label: "下一集") { onNext()}
 if episodes.count > 1 {
 chromeButton("list.bullet", label: "选集") { showAVEpisodes = true}
 }
-if!nativeSubtitleOptions.isEmpty {
+if !nativeSubtitleOptions.isEmpty {
 chromeButton("captions.bubble.fill", label: "字幕") { showAVSubtitlePanel = true}
 }
 }
@@ -1829,8 +1829,8 @@ applyAVSubtitles()
 }
 
 private func applyAVSubtitles() {
-let primary = nativeSubtitleOptions.first { $0.id == selectedPrimaryOptionID}?.cues?? []
-let secondary = nativeSubtitleOptions.first { $0.id == selectedSecondaryOptionID}?.cues?? []
+let primary = nativeSubtitleOptions.first { $0.id == selectedPrimaryOptionID }?.cues ?? []
+let secondary = nativeSubtitleOptions.first { $0.id == selectedSecondaryOptionID }?.cues ?? []
 avModel.setOverlaySubtitles(primary: primary, secondary: secondary)
 }
 }
@@ -1843,7 +1843,7 @@ let options: [NativeSubtitleOption]
 @Binding var secondaryID: String?
 let onLoadLocalSubtitle: () -> Void
 @Environment(\.dismiss) private var dismiss
-@State private var tab: Tab =.primary
+@State private var tab: Tab = .primary
 
 private enum Tab { case primary, secondary}
 
@@ -1894,7 +1894,7 @@ Image(systemName: "checkmark").foregroundStyle(.tint)
 .disabled(isConflicting(option))
 }
 } header: {
-Text(tab ==.primary? "主字幕": "副字幕")
+Text(tab == .primary ? "主字幕" : "副字幕")
 }
 Section {
 Button {
@@ -1920,15 +1920,15 @@ Button("完成") { dismiss()}
 }
 
 private var selectedID: String? {
-tab ==.primary? primaryID: secondaryID
+tab == .primary ? primaryID : secondaryID
 }
 
 private func isConflicting(_ option: NativeSubtitleOption) -> Bool {
-tab ==.primary? option.id == secondaryID: option.id == primaryID
+tab == .primary ? option.id == secondaryID : option.id == primaryID
 }
 
 private func select(_ id: String?) {
-if tab ==.primary {
+if tab == .primary {
 primaryID = id
 } else {
 secondaryID = id
