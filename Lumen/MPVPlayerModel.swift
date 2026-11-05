@@ -263,6 +263,8 @@ final class MPVPlayerModel: ObservableObject {
     private var currentKey = ""
     private var preferenceScope = ""
     private var pendingExternalSubtitle: URL?
+    /// 续播落位（秒）：loadfile 不再带 start 参数，文件加载完成后由本模型 seek 过去，只用一次
+    private var pendingResumePosition: Double?
     private var fileLoaded = false
     private var endFired = false
     private var outroFired = false
@@ -309,13 +311,15 @@ final class MPVPlayerModel: ObservableObject {
         lastPublishedPosition = -1
         pendingExternalSubtitle = externalSubtitleURL
 
-        // 自动续播：与系统播放路径同一策略（设置关闭或不足片段尾部时不跳）
-        var startAt: Double?
+        // 自动续播：与系统播放路径同一策略（设置关闭或不足片段尾部时不跳）。
+        // 位置先记在本模型，文件加载完成（handleFileLoaded）后用 seek 落位：
+        // loadfile 的第三位参数自 mpv 0.38 起是播放列表 index，把 start= 塞进去会被直接拒绝。
+        pendingResumePosition = nil
         if UserDefaults.standard.object(forKey: "settings.autoResume") as? Bool != false {
             let saved = ResumeStore.position(forKey: resumeKey) ?? 0
-            if saved > 3 { startAt = saved }
+            if saved > 3 { pendingResumePosition = saved }
         }
-        controller?.loadFile(url, startAt: startAt)
+        controller?.loadFile(url)
     }
 
     func stop() {
@@ -439,6 +443,18 @@ final class MPVPlayerModel: ObservableObject {
         refreshChapters()
         applySubtitleFontSize()
 
+        // 续播落位：文件已加载，seek 到上次的位置（只落一次；位置已过片尾则不跳）
+        var startPosition = vc.getDouble(MPVProperty.timePos)
+        if let resume = pendingResumePosition {
+            pendingResumePosition = nil
+            if resume > 3, duration <= 0 || resume < duration {
+                vc.seekAbsolute(resume)
+                position = resume
+                startPosition = resume
+                AppLog.add("播放", "已续播到 \(Int(resume)) 秒")
+            }
+        }
+
         // 沿用上次倍速（设置可关），与系统播放路径一致
         if UserDefaults.standard.object(forKey: "settings.rememberRate") as? Bool != false,
            let saved = UserDefaults.standard.object(forKey: "player.lastRate") as? Double,
@@ -447,11 +463,11 @@ final class MPVPlayerModel: ObservableObject {
             vc.setRate(saved)
         }
 
-        // 跳过片头：从片头范围内起播（新片或续播位置仍在片头里）时直接跳到片头结束
+        // 跳过片头：从片头范围内起播（新片或续播位置仍在片头里）时直接跳到片头结束；
+        // 判断位置用续播落位后的有效起点（seek 是异步命令，立即回读 time-pos 仍是旧值）
         if PlayerSettings.skipIntroOutro {
             let intro = PlayerSettings.introSeconds
-            let pos = vc.getDouble(MPVProperty.timePos)
-            if intro > 0, pos < intro,
+            if intro > 0, startPosition < intro,
                duration > intro + PlayerSettings.outroSeconds + 30 {
                 vc.seekAbsolute(intro)
                 position = intro
@@ -595,6 +611,14 @@ extension MPVPlayerModel: MPVPlayerDelegate {
 
     func mpvFileLoaded(mpv: OpaquePointer) {
         handleFileLoaded()
+    }
+
+    /// loadfile 被引擎当场拒绝：没有 END_FILE 事件可等，必须直接点亮报错条，
+    /// 不许再出现「黑屏 00:00 且无任何提示」
+    func mpvLoadFailed(mpv: OpaquePointer, error: String) {
+        isBuffering = false
+        errorMessage = String(localized: "无法播放这个文件")
+        AppLog.add("播放", "直读加载被引擎拒绝：\(error)")
     }
 
     func mpvEndFile(mpv: OpaquePointer, reason: Int32, error: String?) {
