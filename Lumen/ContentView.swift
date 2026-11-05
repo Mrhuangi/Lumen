@@ -90,9 +90,9 @@ enum AppearanceMode: String, CaseIterable {
     case system, light, dark
     var label: String {
         switch self {
-        case .system: return "跟随系统"
-        case .light: return "浅色"
-        case .dark: return "深色"
+        case .system: return String(localized: "跟随系统")
+        case .light: return String(localized: "浅色")
+        case .dark: return String(localized: "深色")
         }
     }
     var scheme: ColorScheme? {
@@ -110,16 +110,16 @@ enum LibrarySort: String, CaseIterable {
     case recentPlayed, recentAdded, name
     var label: String {
         switch self {
-        case .recentPlayed: return "最近播放"
-        case .recentAdded: return "最近添加"
-        case .name: return "片名"
+        case .recentPlayed: return String(localized: "最近播放")
+        case .recentAdded: return String(localized: "最近添加")
+        case .name: return String(localized: "片名")
         }
     }
 }
 
 enum LibraryDisplay: String, CaseIterable {
     case grid, list
-    var label: String { self == .grid ? "网格" : "列表" }
+    var label: String { self == .grid ? String(localized: "网格") : String(localized: "列表") }
 }
 
 // MARK: - 剧集识别（按文件名自动收纳：S01E02 / 第X集）
@@ -277,7 +277,7 @@ struct LibraryView: View {
             scrape.ensureAll(items: store.items)
         }
         .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store)
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
 
@@ -295,7 +295,7 @@ struct LibraryView: View {
         DocumentPickerBridge.presentPicker(contentTypes: [.folder], allowsMultiple: false) { urls in
             guard let folder = urls?.first else { return }
             let r = store.addSource(url: folder)
-            scanSummary = "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。之后每次打开 App 都会自动扫描。"
+            scanSummary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。之后每次打开 App 都会自动扫描。")
         }
     }
 
@@ -349,7 +349,7 @@ struct LibraryView: View {
         }
     }
 
-    private func sectionTitle(_ title: String, count: Int? = nil) -> some View {
+    private func sectionTitle(_ title: LocalizedStringKey, count: Int? = nil) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .font(.title3.weight(.bold))
@@ -449,7 +449,7 @@ struct LibraryView: View {
 
     private func rescan() {
         if let r = store.rescanSavedFolder() {
-            scanSummary = "重新扫描完成：共 \(r.found) 个视频，新加入 \(r.added) 个。"
+            scanSummary = String(localized: "重新扫描完成：共 \(r.found) 个视频，新加入 \(r.added) 个。")
         }
     }
 
@@ -483,7 +483,7 @@ struct EmptyLibraryView: View {
             Text("暂无影片")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
-            Text("添加一个文件夹作为文件源，视频会自动入库。\nMKV 自动无损转换后以系统播放器播放，特殊格式自动切换兼容播放。")
+            Text("添加一个文件夹作为文件源，视频会自动入库。\n点开即播：MKV、MP4 等格式直接读取播放。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -577,11 +577,11 @@ extension MediaItem {
     var formatText: String {
         if let e = fileExtension, !e.isEmpty { return e.uppercased() }
         let ext = ((urlString ?? name) as NSString).pathExtension.uppercased()
-        return ext.isEmpty ? "视频" : ext
+        return ext.isEmpty ? String(localized: "视频") : ext
     }
     var captionText: String {
-        var parts = [isRemote ? "直链" : "本地", formatText]
-        if subtitleName != nil { parts.append("外挂字幕") }
+        var parts = [isRemote ? String(localized: "直链") : String(localized: "本地"), formatText]
+        if subtitleName != nil { parts.append(String(localized: "外挂字幕")) }
         return parts.joined(separator: " · ")
     }
 }
@@ -709,7 +709,7 @@ struct SeriesView: View {
         .navigationTitle(show)
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store)
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
         .task { scrape.ensureAll(items: store.items) }
     }
@@ -964,6 +964,7 @@ struct ProgressBar: View {
 
 struct SearchView: View {
     @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
     @State private var query = ""
     @State private var activeItem: MediaItem?
 
@@ -991,7 +992,7 @@ struct SearchView: View {
         }
         .searchable(text: $query, prompt: "搜索片名")
         .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store)
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
 }
@@ -1012,7 +1013,7 @@ struct SourcesView: View {
                         .foregroundStyle(.secondary)
                     Button {
                         let added = store.scanOwnDocuments()
-                        summary = added > 0 ? "新入库 \(added) 个视频。" : "没有发现新视频。先把视频拷进「文件」App 的 Lumen 文件夹再试。"
+                        summary = added > 0 ? String(localized: "新入库 \(added) 个视频。") : String(localized: "没有发现新视频。先把视频拷进「文件」App 的 Lumen 文件夹再试。")
                     } label: {
                         Label("扫描本机目录", systemImage: "folder.badge.gearshape")
                     }
@@ -1093,13 +1094,13 @@ struct SourcesView: View {
         DocumentPickerBridge.presentPicker(contentTypes: [.folder], allowsMultiple: false) { urls in
             guard let folder = urls?.first else { return }
             let r = store.addSource(url: folder)
-            summary = "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。"
+            summary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。")
         }
     }
 
     private func rescan() {
         let r = store.rescanAllSources()
-        summary = "重新扫描完成：共 \(r.found) 个视频，新加入 \(r.added) 个。"
+        summary = String(localized: "重新扫描完成：共 \(r.found) 个视频，新加入 \(r.added) 个。")
     }
 }
 
@@ -1114,6 +1115,13 @@ struct SettingsView: View {
     @AppStorage("settings.autoPiP") private var autoPiP = true
     @AppStorage("settings.rememberRate") private var rememberRate = true
     @AppStorage("settings.subFontSize") private var subFontSize: Double = 17
+    @AppStorage(PlayerSettings.nativeModeKey) private var nativeMode = false
+    @AppStorage(PlayerSettings.skipKey) private var skipIntroOutro = false
+    @AppStorage(PlayerSettings.introSecondsKey) private var introSeconds: Double = 90
+    @AppStorage(PlayerSettings.outroSecondsKey) private var outroSeconds: Double = 120
+    @AppStorage(PlayerSettings.showPrevNextKey) private var showPrevNextButtons = true
+    @AppStorage(PlayerSettings.showSeekButtonsKey) private var showSeekButtons = true
+    @AppStorage(PlayerSettings.mpvSubtitleFontSizeKey) private var mpvSubtitleFontSize: Int = 55
     @State private var cacheNote: String?
     @State private var scanNote: String?
 
@@ -1136,19 +1144,34 @@ struct SettingsView: View {
                     Toggle("自动连播下一集", isOn: $autoNext)
                     Toggle("退出时自动画中画", isOn: $autoPiP)
                     Toggle("记住播放速度", isOn: $rememberRate)
+                    Toggle("原生模式", isOn: $nativeMode)
+                    Text("默认直读直放，点开即播。开启原生模式后，视频先无损重封装再用系统播放器播放，画中画也仅在此模式可用。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Toggle("跳过片头片尾", isOn: $skipIntroOutro)
+                    if skipIntroOutro {
+                        Stepper(value: $introSeconds, in: 0...600, step: 5) {
+                            LabeledContent("片头时长", value: String(localized: "\(Int(introSeconds)) 秒"))
+                        }
+                        Stepper(value: $outroSeconds, in: 0...600, step: 5) {
+                            LabeledContent("片尾时长", value: String(localized: "\(Int(outroSeconds)) 秒"))
+                        }
+                    }
+                    Toggle("上一集 / 下一集按钮", isOn: $showPrevNextButtons)
+                    Toggle("快退 / 快进按钮", isOn: $showSeekButtons)
                     Stepper(value: $subFontSize, in: 13...26, step: 1) {
                         LabeledContent("外挂字幕字号", value: "\(Int(subFontSize))")
                     }
-                    Text("画中画仅在系统播放时可用；字幕字号用于系统播放的外挂字幕叠加显示。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    Stepper(value: $mpvSubtitleFontSize, in: 36...80, step: 1) {
+                        LabeledContent("字幕字号（直读）", value: "\(mpvSubtitleFontSize)")
+                    }
                 }
                 Section("扫描") {
                     LabeledContent("文件源数量", value: "\(store.sources.count)")
                     if !store.sources.isEmpty {
                         Button("重新扫描全部") {
                             let r = store.rescanAllSources()
-                            scanNote = "共 \(r.found) 个视频，新加入 \(r.added) 个。"
+                            scanNote = String(localized: "共 \(r.found) 个视频，新加入 \(r.added) 个。")
                         }
                         Button("清除全部文件源", role: .destructive) {
                             store.clearScanFolder()
@@ -1169,6 +1192,9 @@ struct SettingsView: View {
                         store.refreshProgress()
                     }
                     Button("清除重封装缓存") { clearRemuxCache() }
+                    Text("原生模式播放时生成的无损重封装文件会缓存在本机，可在此清除。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                     if let cacheNote {
                         Text(cacheNote).font(.footnote).foregroundStyle(.secondary)
                     }
@@ -1182,7 +1208,7 @@ struct SettingsView: View {
                 Section("关于") {
                     LabeledContent("版本", value: "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-"))")
                     NavigationLink("更新日志") { ChangelogView() }
-                    Text("双引擎播放：优先无损重封装＋系统播放器，原生输出高动态范围与空间音频；格式不支持时自动切换兼容播放，MKV 直接读取。")
+                    Text("直读播放为默认，点开即播；字幕、音轨、章节一应俱全。原生模式可在设置或播放器更多设置中开启。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -1193,7 +1219,7 @@ struct SettingsView: View {
 
     private func clearRemuxCache() {
         FFmpegRemuxer.clearCache()
-        cacheNote = "重封装缓存已清除。"
+        cacheNote = String(localized: "重封装缓存已清除。")
     }
 }
 
@@ -1235,267 +1261,677 @@ struct LogView: View {
     }
 }
 
-// MARK: - 播放流程：双引擎（无损重封装 → 系统播放；不可用 → 兼容播放直读）
+// MARK: - 播放流程：直读直放为默认；原生模式（手动开启）才走无损重封装 → 系统播放
 
 enum PlaybackEngine: Equatable {
-    case avPlayer(URL)
-    case mpv(URL)
+case avPlayer(URL)
+case mpv(URL)
+}
+
+/// 原生模式下的字幕选项（外挂文件 / 重封装时提取的内封文本字幕），供叠加层选轨
+struct NativeSubtitleOption: Identifiable {
+let id: String
+let label: String
+let kindLabel: String
+/// 默认选中优先级分数（越大越优先）：外挂最高，内封按简体＞繁体＞英文
+let score: Int
+let cues: [SubtitleCue]
 }
 
 struct PlaybackFlow: View {
-    let item: MediaItem
-    @ObservedObject var store: LibraryStore
-    @StateObject private var avModel = PlayerModel()
-    @StateObject private var mpvModel = MPVPlayerModel()
-    @Environment(\.dismiss) private var dismiss
+let item: MediaItem
+@ObservedObject var store: LibraryStore
+var scrape: ScrapeStore? = nil
+@StateObject private var avModel = PlayerModel()
+@StateObject private var mpvModel = MPVPlayerModel()
+@Environment(\.dismiss) private var dismiss
+@AppStorage(PlayerSettings.nativeModeKey) private var nativeMode = false
 
-    @State private var currentItem: MediaItem
-    @State private var engine: PlaybackEngine?
-    @State private var avSubtitleCues: [SubtitleCue]?
-    @State private var externalSubURL: URL?
-    @State private var remuxProgress: Double?
-    @State private var failure: String?
-    @State private var warnings: [String] = []
-    @State private var showWarnings = false
-    @State private var fallbackNotice: String?
-    @State private var remuxer: FFmpegRemuxer?
+@State private var currentItem: MediaItem
+@State private var engine: PlaybackEngine?
+@State private var nativeOptions: [NativeSubtitleOption] = []
+@State private var subtitleOptionsToken = 0
+@State private var externalSubURL: URL?
+@State private var remuxProgress: Double?
+@State private var failure: String?
+@State private var warnings: [String] = []
+@State private var showWarnings = false
+@State private var notice: String?
+@State private var remuxer: FFmpegRemuxer?
 
-    init(item: MediaItem, store: LibraryStore) {
-        self.item = item
-        self.store = store
-        _currentItem = State(initialValue: item)
-    }
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            if let engine {
-                PlayerScreen(engine: engine, title: currentItem.name,
-                             subtitleCues: avSubtitleCues,
-                             externalSubtitleURL: externalSubURL,
-                             resumeKey: currentItem.id.uuidString,
-                             notice: fallbackNotice,
-                             avModel: avModel, mpvModel: mpvModel) { dismiss() }
-                    .id(currentItem.id)
-            } else if let failure {
-                ContentUnavailableView {
-                    Label("无法播放", systemImage: "exclamationmark.triangle")
-                } description: {
-                    Text(failure)
-                } actions: {
-                    Button("关闭") { dismiss() }
-                }
-                .foregroundStyle(.white)
-            } else {
-                remuxCard
-            }
-        }
-        .preferredColorScheme(.dark)
-        .task { await prepare() }
-        .onAppear {
-            store.touchPlayed(currentItem)
-            avModel.onPlaybackEnded = { advanceToNext() }
-            mpvModel.onPlaybackEnded = { advanceToNext() }
-            OrientationHelper.unlockForPlayback()
-        }
-        .onDisappear {
-            remuxer?.cancel()
-            avModel.stop()
-            mpvModel.stop()
-            store.stopAccessing()
-            store.refreshProgress()
-            OrientationHelper.lockToPortrait()
-        }
-        .alert("播放提示", isPresented: $showWarnings) {
-            Button("继续播放") { }
-        } message: {
-            Text(warnings.joined(separator: "\n"))
-        }
-    }
-
-    /// 自动连播：当前集播完后切到同剧的下一集（设置里可关，两个引擎共用）
-    private func advanceToNext() {
-        guard UserDefaults.standard.object(forKey: "settings.autoNext") as? Bool != false else { return }
-        guard let next = store.nextInSeries(after: currentItem) else { return }
-        AppLog.add("播放", "自动连播下一集：\(next.name)")
-        avModel.stop()
-        mpvModel.stop()
-        currentItem = next
-        engine = nil
-        avSubtitleCues = nil
-        externalSubURL = nil
-        remuxProgress = nil
-        failure = nil
-        warnings = []
-        fallbackNotice = nil
-        store.touchPlayed(next)
-        Task { await prepare() }
-    }
-
-    private var remuxCard: some View {
-        VStack(spacing: 14) {
-            LiuGuangGlyph()
-            Text(currentItem.name)
-                .font(.headline)
-                .foregroundStyle(.white)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-            if let progress = remuxProgress {
-                Text("正在重封装 \(Int(progress * 100))%")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
-                ProgressView(value: progress)
-                    .tint(.white)
-                    .frame(width: 200)
-                Text("无损转换，不重新编码，速度取决于文件大小")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
-            } else {
-                ProgressView().tint(.white)
-                Text("正在准备…")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-        }
-        .padding(28)
-        .glassEffect(.regular, in: .rect(cornerRadius: 24))
-        .padding(.horizontal, 32)
-    }
-
-    private func prepare() async {
-        guard let url = store.resolveURL(for: currentItem) else {
-            failure = "无法读取这个文件（书签失效或链接不可用），请删除后重新导入。"
-            return
-        }
-        externalSubURL = store.externalSubtitleURL(for: currentItem)
-        // 直链与系统原生容器（MP4/MOV/M4V）直接走系统播放，不绕重封装
-        let ext = url.pathExtension.lowercased()
-        if currentItem.urlString != nil || ["mp4", "mov", "m4v"].contains(ext) {
-            avSubtitleCues = store.loadExternalSubtitleCues(for: currentItem)
-            engine = .avPlayer(url)
-            return
-        }
-        // 主引擎：FFmpeg 无损重封装 → 系统播放器
-        AppLog.add("播放", "\(currentItem.name)：开始无损重封装")
-        remuxProgress = 0
-        let activeRemuxer = FFmpegRemuxer()
-        remuxer = activeRemuxer
-        do {
-            let result = try await Task.detached(priority: .userInitiated) {
-                try activeRemuxer.remux(input: url) { value in
-                    Task { @MainActor in remuxProgress = value }
-                }
-            }.value
-            remuxProgress = nil
-            warnings = result.warnings
-            // 字幕：外挂文件优先；否则用重封装时提取的内封中文字幕（叠加渲染）
-            if let cues = store.loadExternalSubtitleCues(for: currentItem) {
-                avSubtitleCues = cues
-            } else {
-                avSubtitleCues = result.chineseSubtitleCues()
-            }
-            engine = .avPlayer(result.outputURL)
-            if !warnings.isEmpty { showWarnings = true }
-        } catch let error as FFmpegRemuxError {
-            remuxProgress = nil
-            if error == .cancelled { return }
-            AppLog.add("播放", "\(currentItem.name)：重封装不可用（\(error.errorDescription ?? "")），切换兼容播放")
-            fallbackNotice = "已切换兼容播放"
-            engine = .mpv(url)
-        } catch {
-            remuxProgress = nil
-            AppLog.add("播放", "\(currentItem.name)：重封装异常（\(error.localizedDescription)），切换兼容播放")
-            fallbackNotice = "已切换兼容播放"
-            engine = .mpv(url)
-        }
-    }
+init(item: MediaItem, store: LibraryStore, scrape: ScrapeStore? = nil) {
+self.item = item
+self.store = store
+self.scrape = scrape
+_currentItem = State(initialValue: item)
 }
 
-// MARK: - 播放器界面（双引擎共用外壳：只留关闭按钮，不自绘标题/徽章）
+private var episodes: [MediaItem] { store.episodesInSeries(of: currentItem)}
+private var preferenceScope: String {
+EpisodeParser.parse(currentItem.name)?.show?? currentItem.name
+}
+private var hasPrevious: Bool { store.previousInSeries(before: currentItem)!= nil}
+private var hasNext: Bool { store.nextInSeries(after: currentItem)!= nil}
+
+var body: some View {
+ZStack {
+Color.black.ignoresSafeArea()
+if let engine {
+PlayerScreen(engine: engine, title: currentItem.name,
+nativeSubtitleOptions: nativeOptions,
+externalSubtitleURL: externalSubURL,
+resumeKey: currentItem.id.uuidString,
+preferenceScope: preferenceScope,
+notice: notice,
+subtitleOptionsToken: subtitleOptionsToken,
+episodes: episodes,
+currentEpisodeID: currentItem.id,
+stillProvider: stillImage(for:),
+avModel: avModel, mpvModel: mpvModel,
+onClose: { dismiss()},
+onSelectEpisode: { switchToEpisode($0)},
+onPrevious: hasPrevious? { goPrevious()}: nil,
+onNext: hasNext? { goNextManual()}: nil,
+onLoadLocalSubtitle: { loadLocalSubtitle()})
+.id(currentItem.id)
+} else if let failure {
+ContentUnavailableView {
+Label("无法播放", systemImage: "exclamationmark.triangle")
+} description: {
+Text(failure)
+} actions: {
+Button("关闭") { dismiss()}
+}
+.foregroundStyle(.white)
+} else {
+preparingView
+}
+}
+.preferredColorScheme(.dark)
+.task { start()}
+.onAppear {
+store.touchPlayed(currentItem)
+avModel.onPlaybackEnded = { advanceToNext(manual: false)}
+mpvModel.onPlaybackEnded = { advanceToNext(manual: false)}
+avModel.onOutroReached = { advanceToNext(manual: false)}
+mpvModel.onOutroReached = { advanceToNext(manual: false)}
+avModel.onSkipOutroRequested = { advanceToNext(manual: true)}
+mpvModel.onSkipOutroRequested = { advanceToNext(manual: true)}
+OrientationHelper.unlockForPlayback()
+}
+.onDisappear {
+remuxer?.cancel()
+avModel.stop()
+mpvModel.stop()
+store.stopAccessing()
+store.refreshProgress()
+OrientationHelper.lockToPortrait()
+}
+.onChange(of: nativeMode) { _, newValue in
+// 在播放器更多设置或设置页切换模式：当前视频按新模式重新载入
+guard engine!= nil else { return}
+notice = newValue
+? String(localized: "已切换原生模式")
+: String(localized: "已切换直读播放")
+avModel.stop()
+mpvModel.stop()
+engine = nil
+start()
+}
+.alert("播放提示", isPresented: $showWarnings) {
+Button("继续播放") {}
+} message: {
+Text(warnings.joined(separator: "\n"))
+}
+}
+
+/// 准备视图只在原生模式的重封装阶段出现（用户手动选择的模式）；默认直读不经过这里
+private var preparingView: some View {
+VStack(spacing: 14) {
+LiuGuangGlyph()
+Text(currentItem.name)
+.font(.headline)
+.foregroundStyle(.white)
+.lineLimit(2)
+.multilineTextAlignment(.center)
+if let progress = remuxProgress {
+Text("正在重封装 \(Int(progress * 100))%")
+.font(.subheadline)
+.foregroundStyle(.white.opacity(0.75))
+ProgressView(value: progress)
+.tint(.white)
+.frame(width: 200)
+Text("无损转换，不重新编码，速度取决于文件大小")
+.font(.caption)
+.foregroundStyle(.white.opacity(0.5))
+} else {
+ProgressView().tint(.white)
+Text("正在准备…")
+.font(.subheadline)
+.foregroundStyle(.white.opacity(0.75))
+}
+}
+.padding(28)
+.glassEffect(.regular, in:.rect(cornerRadius: 24))
+.padding(.horizontal, 32)
+}
+
+private func stillImage(for episode: MediaItem) -> UIImage? {
+guard let scrape, let info = EpisodeParser.parse(episode.name) else { return nil}
+return scrape.stillImage(for: info.show, season: info.season, episode: info.episode)
+}
+
+// MARK: 启动与切集
+
+private func start() {
+let target = currentItem
+remuxer?.cancel()
+nativeOptions = []
+failure = nil
+remuxProgress = nil
+guard let url = store.resolveURL(for: target) else {
+failure = String(localized: "无法读取这个文件（书签失效或链接不可用），请删除后重新导入。")
+return
+}
+externalSubURL = store.externalSubtitleURL(for: target)
+let nextExists = store.nextInSeries(after: target)!= nil
+avModel.outroAdvanceAvailable = nextExists
+mpvModel.outroAdvanceAvailable = nextExists
+if nativeMode {
+startNative(url: url, item: target)
+} else {
+// 默认路线：直读直放，点开即播，不做任何预处理
+engine =.mpv(url)
+}
+}
+
+/// 原生模式：系统原生容器直接系统播放；其余先无损重封装再系统播放；
+/// 重封装不可用时提示并改直读（不静默、不阻塞默认路线）
+private func startNative(url: URL, item target: MediaItem) {
+let ext = url.pathExtension.lowercased()
+if target.urlString!= nil || ["mp4", "mov", "m4v"].contains(ext) {
+nativeOptions = externalOption(for: target).map { [$0]}?? []
+engine =.avPlayer(url)
+return
+}
+AppLog.add("播放", "\(target.name)：原生模式，先无损重封装")
+remuxProgress = 0
+let activeRemuxer = FFmpegRemuxer()
+remuxer = activeRemuxer
+Task {
+do {
+let result = try await Task.detached(priority:.userInitiated) {
+try activeRemuxer.remux(input: url) { value in
+Task { @MainActor in remuxProgress = value}
+}
+}.value
+guard currentItem.id == target.id else { return}
+remuxProgress = nil
+warnings = result.warnings
+var options: [NativeSubtitleOption] = []
+if let external = externalOption(for: target) { options.append(external)}
+options += result.embeddedSubtitles.map { sub in
+let track = MPVTrack(id: 0, type: "sub", lang: sub.lang, title: sub.title,
+codec: "subrip", isExternal: false)
+return NativeSubtitleOption(id: "emb-\(sub.streamIndex)",
+label: track.displayName,
+kindLabel: String(localized: "文本"),
+score: track.subtitleDefaultScore,
+cues: sub.cues)
+}
+nativeOptions = options
+engine =.avPlayer(result.outputURL)
+if!warnings.isEmpty { showWarnings = true}
+} catch let error as FFmpegRemuxError {
+guard currentItem.id == target.id else { return}
+remuxProgress = nil
+if error ==.cancelled { return}
+AppLog.add("播放", "\(target.name)：原生模式重封装不可用（\(error.errorDescription?? "")），改直读播放")
+notice = String(localized: "原生模式不可用，已切换直读播放")
+engine =.mpv(url)
+} catch {
+guard currentItem.id == target.id else { return}
+remuxProgress = nil
+AppLog.add("播放", "\(target.name)：原生模式重封装异常（\(error.localizedDescription)），改直读播放")
+notice = String(localized: "原生模式不可用，已切换直读播放")
+engine =.mpv(url)
+}
+}
+}
+
+private func externalOption(for target: MediaItem) -> NativeSubtitleOption? {
+guard let cues = store.loadExternalSubtitleCues(for: target) else { return nil}
+var label = String(localized: "外挂字幕")
+if let name = target.subtitleName { label += " · \(name)"}
+return NativeSubtitleOption(id: "external", label: label,
+kindLabel: String(localized: "文本"),
+score: Int.max, cues: cues)
+}
+
+private func switchToEpisode(_ target: MediaItem) {
+guard target.id!= currentItem.id else { return}
+avModel.stop()
+mpvModel.stop()
+currentItem = target
+engine = nil
+store.touchPlayed(target)
+start()
+}
+
+/// 连播：自动触发（播完/片尾）受「自动连播下一集」设置约束；手动点跳过片尾则直接切
+private func advanceToNext(manual: Bool) {
+if!manual,
+UserDefaults.standard.object(forKey: "settings.autoNext") as? Bool == false { return}
+guard let next = store.nextInSeries(after: currentItem) else { return}
+AppLog.add("播放", "连播下一集：\(next.name)")
+switchToEpisode(next)
+}
+
+private func goPrevious() {
+if let prev = store.previousInSeries(before: currentItem) { switchToEpisode(prev)}
+}
+
+private func goNextManual() {
+if let next = store.nextInSeries(after: currentItem) { switchToEpisode(next)}
+}
+
+/// 加载本地外挂字幕：选择器选文件 → 挂到条目（持久化）→ 按当前引擎立即生效
+private func loadLocalSubtitle() {
+let target = currentItem
+DocumentPickerBridge.presentPicker(contentTypes: [.item], allowsMultiple: false) { urls in
+guard let picked = urls?.first else { return}
+store.attachSubtitle(item: target, url: picked)
+guard target.id == currentItem.id else { return}
+externalSubURL = store.externalSubtitleURL(for: target)
+switch engine {
+case.mpv:
+if let externalSubURL { mpvModel.addExternalSubtitleFile(externalSubURL)}
+notice = String(localized: "字幕已加载")
+case.avPlayer:
+if let option = externalOption(for: target) {
+nativeOptions.removeAll { $0.id == "external"}
+nativeOptions.insert(option, at: 0)
+subtitleOptionsToken += 1
+notice = String(localized: "字幕已加载")
+}
+case nil:
+break
+}
+}
+}
+}
+
+// MARK: - 播放器界面（双引擎共用外壳）
+//
+//
+// controlsVisible 是唯一的显隐状态：顶部栏（标题、关闭按钮、提示条、报错条）、
+// 原生路的自绘按钮与 MPVControlsView 的全部控件都由它驱动，不存在第二套计时。
+// 规则：播放中 3.5 秒无操作淡出全隐；任意交互（poke）唤出并重置计时；
+// 拖动进度或打开面板时暂停计时（chromeSuspended）；暂停时保持显示；
+// 报错/提示出现时强制唤出，提示 4 秒后自动消失、报错随控件一同隐去。
 
 struct PlayerScreen: View {
-    let engine: PlaybackEngine
-    let title: String
-    var subtitleCues: [SubtitleCue]? = nil
-    var externalSubtitleURL: URL? = nil
-    var resumeKey: String = ""
-    var notice: String? = nil
-    @ObservedObject var avModel: PlayerModel
-    @ObservedObject var mpvModel: MPVPlayerModel
-    let onClose: () -> Void
+let engine: PlaybackEngine
+let title: String
+var nativeSubtitleOptions: [NativeSubtitleOption] = []
+var externalSubtitleURL: URL? = nil
+var resumeKey: String = ""
+var preferenceScope: String = ""
+var notice: String? = nil
+var subtitleOptionsToken: Int = 0
+var episodes: [MediaItem] = []
+var currentEpisodeID: UUID
+var stillProvider: (MediaItem) -> UIImage? = { _ in nil}
+@ObservedObject var avModel: PlayerModel
+@ObservedObject var mpvModel: MPVPlayerModel
+let onClose: () -> Void
+let onSelectEpisode: (MediaItem) -> Void
+let onPrevious: (() -> Void)?
+let onNext: (() -> Void)?
+let onLoadLocalSubtitle: () -> Void
 
-    @State private var noticeVisible = false
+@State private var controlsVisible = true
+@State private var interactionSeed = 0
+@State private var chromeSuspended = false
+@State private var currentNotice: String?
+@State private var selectedPrimaryOptionID: String?
+@State private var selectedSecondaryOptionID: String?
+@State private var showAVSubtitlePanel = false
+@State private var showAVEpisodes = false
+@AppStorage(PlayerSettings.showPrevNextKey) private var showPrevNextButtons = true
 
-    private var activeError: String? {
-        switch engine {
-        case .avPlayer: return avModel.errorMessage
-        case .mpv: return mpvModel.errorMessage
-        }
-    }
+private var isMPV: Bool {
+if case.mpv = engine { return true}
+return false
+}
+private var activePaused: Bool { isMPV? mpvModel.isPaused: avModel.isPaused}
+private var activeError: String? { isMPV? mpvModel.errorMessage: avModel.errorMessage}
+private var anyPanelOpen: Bool { chromeSuspended || showAVSubtitlePanel || showAVEpisodes}
 
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            switch engine {
-            case .avPlayer:
-                PlayerView(player: avModel.player, subtitleText: avModel.currentSubtitleText)
-                    .ignoresSafeArea()
-            case .mpv:
-                MPVPlayerView(model: mpvModel)
-                    .ignoresSafeArea()
-                MPVControlsView(model: mpvModel)
-            }
-            // 只保留一个关闭按钮：标题/徽章不再自绘，避免和系统播放器自带的标题层重叠
-            VStack(alignment: .trailing, spacing: 10) {
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                if let notice, noticeVisible {
-                    Text(notice)
-                        .font(.footnote)
-                        .foregroundStyle(.white)
-                        .padding(10)
-                        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
-                }
-                if let error = activeError {
-                    Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.white)
-                        .padding(10)
-                        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
-                }
-            }
-            .padding()
-        }
-        .onChange(of: avModel.videoIsLandscape) { _, isLandscape in
-            // 横屏视频自动转横屏全屏；竖屏视频不硬转（沿用既定方向策略）
-            if isLandscape == true {
-                OrientationHelper.requestLandscape()
-            }
-        }
-        .onChange(of: mpvModel.videoIsLandscape) { _, isLandscape in
-            if isLandscape == true {
-                OrientationHelper.requestLandscape()
-            }
-        }
-        .task(id: engine) {
-            switch engine {
-            case .avPlayer(let url):
-                avModel.load(url: url, title: title, resumeKey: resumeKey)
-                if let subtitleCues { avModel.setExternalSubtitles(subtitleCues) }
-                avModel.player.play()
-            case .mpv(let url):
-                mpvModel.load(url: url, title: title, resumeKey: resumeKey,
-                              externalSubtitleURL: externalSubtitleURL)
-            }
-            if notice != nil {
-                noticeVisible = true
-                try? await Task.sleep(for: .seconds(4))
-                noticeVisible = false
-            }
-        }
-    }
+private struct HideKey: Equatable {
+var visible: Bool
+var seed: Int
+var suspended: Bool
+var paused: Bool
+}
+
+var body: some View {
+ZStack {
+engineLayer
+if controlsVisible {
+topChrome
+.transition(.opacity)
+}
+if!isMPV, avModel.outroPromptVisible {
+avOutroButton
+}
+}
+.animation(.easeInOut(duration: 0.25), value: controlsVisible)
+.task(id: HideKey(visible: controlsVisible, seed: interactionSeed,
+suspended: anyPanelOpen, paused: activePaused)) {
+guard controlsVisible,!activePaused,!anyPanelOpen else { return}
+try? await Task.sleep(for:.seconds(3.5))
+guard!Task.isCancelled else { return}
+withAnimation(.easeInOut(duration: 0.3)) { controlsVisible = false}
+}
+.task(id: engine) {
+switch engine {
+case.avPlayer(let url):
+avModel.load(url: url, title: title, resumeKey: resumeKey)
+applySubtitleDefaults()
+avModel.player.play()
+case.mpv(let url):
+mpvModel.load(url: url, title: title, resumeKey: resumeKey,
+externalSubtitleURL: externalSubtitleURL,
+preferenceScope: preferenceScope)
+}
+}
+.task(id: notice) {
+currentNotice = notice
+guard notice!= nil else { return}
+controlsVisible = true
+interactionSeed &+= 1
+try? await Task.sleep(for:.seconds(4))
+if!Task.isCancelled { currentNotice = nil}
+}
+.onChange(of: activeError) { _, newValue in
+if newValue!= nil {
+controlsVisible = true
+interactionSeed &+= 1
+}
+}
+.onChange(of: activePaused) { _, paused in
+if paused { controlsVisible = true}
+}
+.onChange(of: subtitleOptionsToken) { _, _ in applySubtitleDefaults()}
+.onChange(of: selectedPrimaryOptionID) { _, _ in applyAVSubtitles()}
+.onChange(of: selectedSecondaryOptionID) { _, _ in applyAVSubtitles()}
+.onChange(of: avModel.videoIsLandscape) { _, isLandscape in
+// 横屏视频自动转横屏全屏；竖屏视频不硬转（沿用既定方向策略）
+if isLandscape == true {
+OrientationHelper.requestLandscape()
+}
+}
+.onChange(of: mpvModel.videoIsLandscape) { _, isLandscape in
+if isLandscape == true {
+OrientationHelper.requestLandscape()
+}
+}
+.sheet(isPresented: $showAVSubtitlePanel) {
+AVSubtitlePanelView(options: nativeSubtitleOptions,
+primaryID: $selectedPrimaryOptionID,
+secondaryID: $selectedSecondaryOptionID,
+onLoadLocalSubtitle: onLoadLocalSubtitle)
+}
+.sheet(isPresented: $showAVEpisodes) {
+EpisodePanelView(episodes: episodes, currentID: currentEpisodeID,
+stillProvider: stillProvider) { picked in
+showAVEpisodes = false
+onSelectEpisode(picked)
+}
+}
+}
+
+/// 任意交互后调用：控件未显示则淡入，并重置自动隐藏计时
+private func poke() {
+if!controlsVisible {
+withAnimation(.easeInOut(duration: 0.25)) { controlsVisible = true}
+}
+interactionSeed &+= 1
+}
+
+@ViewBuilder
+private var engineLayer: some View {
+switch engine {
+case.avPlayer:
+PlayerView(player: avModel.player,
+subtitleText: avModel.currentSubtitleText,
+secondarySubtitleText: avModel.currentSecondarySubtitleText)
+.ignoresSafeArea()
+.simultaneousGesture(TapGesture().onEnded { poke()})
+case.mpv:
+MPVPlayerView(model: mpvModel)
+.ignoresSafeArea()
+MPVControlsView(model: mpvModel,
+chromeVisible: $controlsVisible,
+chromeSuspended: $chromeSuspended,
+poke: poke,
+episodes: episodes,
+currentEpisodeID: currentEpisodeID,
+onSelectEpisode: onSelectEpisode,
+onPrevious: onPrevious,
+onNext: onNext,
+onLoadLocalSubtitle: onLoadLocalSubtitle,
+stillProvider: stillProvider)
+}
+}
+
+// MARK: 顶部栏（标题＋关闭＋提示/报错）——与控件同显同隐
+
+private var topChrome: some View {
+VStack {
+HStack(alignment:.top, spacing: 10) {
+if isMPV {
+// 直读路没有系统标题层，自绘标题（随控件显隐）；原生路标题由系统控件显示
+Text(title)
+.font(.headline)
+.foregroundStyle(.white)
+.lineLimit(1)
+.shadow(color:.black.opacity(0.55), radius: 4, y: 1)
+.padding(.top, 7)
+}
+Spacer()
+VStack(alignment:.trailing, spacing: 8) {
+HStack(spacing: 8) {
+if!isMPV {
+if showPrevNextButtons, let onPrevious {
+chromeButton("backward.end.fill", label: "上一集") { onPrevious()}
+}
+if showPrevNextButtons, let onNext {
+chromeButton("forward.end.fill", label: "下一集") { onNext()}
+}
+if episodes.count > 1 {
+chromeButton("list.bullet", label: "选集") { showAVEpisodes = true}
+}
+if!nativeSubtitleOptions.isEmpty {
+chromeButton("captions.bubble.fill", label: "字幕") { showAVSubtitlePanel = true}
+}
+}
+chromeButton("xmark", label: "关闭") { onClose()}
+}
+if let currentNotice {
+chip(currentNotice)
+}
+if let activeError {
+chip(activeError)
+}
+}
+}
+Spacer()
+}
+.padding()
+}
+
+private func chromeButton(_ systemImage: String, label: String,
+action: @escaping () -> Void) -> some View {
+Button {
+action()
+poke()
+} label: {
+Image(systemName: systemImage)
+.font(.system(size: 14, weight:.semibold))
+.foregroundStyle(.white)
+.frame(width: 34, height: 34)
+.glassEffect(.regular.interactive(), in: Circle())
+}
+.accessibilityLabel(label)
+}
+
+private func chip(_ text: String) -> some View {
+Text(text)
+.font(.footnote)
+.foregroundStyle(.white)
+.padding(.horizontal, 12)
+.padding(.vertical, 8)
+.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12, style:.continuous))
+}
+
+/// 原生路的「跳过片尾」（片尾窗口内出现，与直读路一致）
+private var avOutroButton: some View {
+VStack {
+Spacer()
+HStack {
+Spacer()
+Button {
+avModel.skipOutro()
+} label: {
+Label("跳过片尾", systemImage: "forward.end.fill")
+.font(.subheadline.weight(.semibold))
+.foregroundStyle(.white)
+.padding(.horizontal, 16)
+.padding(.vertical, 10)
+.glassEffect(.regular.interactive(), in: Capsule())
+}
+}
+.padding(.trailing, 16)
+}
+.padding(.bottom, 96)
+.transition(.opacity)
+}
+
+// MARK: 原生路字幕选择
+
+private func applySubtitleDefaults() {
+let best = nativeSubtitleOptions.max { $0.score < $1.score}
+selectedPrimaryOptionID = best?.id
+selectedSecondaryOptionID = nil
+applyAVSubtitles()
+}
+
+private func applyAVSubtitles() {
+let primary = nativeSubtitleOptions.first { $0.id == selectedPrimaryOptionID}?.cues?? []
+let secondary = nativeSubtitleOptions.first { $0.id == selectedSecondaryOptionID}?.cues?? []
+avModel.setOverlaySubtitles(primary: primary, secondary: secondary)
+}
+}
+
+// MARK: - 原生模式字幕面板（外挂＋内封文本字幕：主/副双选）
+
+struct AVSubtitlePanelView: View {
+let options: [NativeSubtitleOption]
+@Binding var primaryID: String?
+@Binding var secondaryID: String?
+let onLoadLocalSubtitle: () -> Void
+@Environment(\.dismiss) private var dismiss
+@State private var tab: Tab =.primary
+
+private enum Tab { case primary, secondary}
+
+var body: some View {
+NavigationStack {
+List {
+Section {
+Picker("字幕", selection: $tab) {
+Text("主字幕").tag(Tab.primary)
+Text("副字幕").tag(Tab.secondary)
+}
+.pickerStyle(.segmented)
+.listRowBackground(Color.clear)
+}
+Section {
+Button {
+select(nil)
+} label: {
+HStack {
+Text("关闭")
+.foregroundStyle(.primary)
+Spacer()
+if selectedID == nil {
+Image(systemName: "checkmark").foregroundStyle(.tint)
+}
+}
+}
+ForEach(options) { option in
+Button {
+select(option.id)
+} label: {
+HStack(spacing: 8) {
+Text(option.label)
+.foregroundStyle(.primary)
+.lineLimit(2)
+Spacer()
+Text(option.kindLabel)
+.font(.caption2.weight(.medium))
+.foregroundStyle(.secondary)
+.padding(.horizontal, 6)
+.padding(.vertical, 2)
+.background(.secondary.opacity(0.15), in: Capsule())
+if option.id == selectedID {
+Image(systemName: "checkmark").foregroundStyle(.tint)
+}
+}
+}
+.disabled(isConflicting(option))
+}
+} header: {
+Text(tab ==.primary? "主字幕": "副字幕")
+}
+Section {
+Button {
+dismiss()
+onLoadLocalSubtitle()
+} label: {
+Label("加载本地字幕", systemImage: "doc.badge.plus")
+}
+} footer: {
+Text("原生模式仅列出可叠加显示的文本字幕；图形字幕请用直读播放查看。")
+}
+}
+.navigationTitle("字幕")
+.navigationBarTitleDisplayMode(.inline)
+.toolbar {
+ToolbarItem(placement:.confirmationAction) {
+Button("完成") { dismiss()}
+}
+}
+}
+.preferredColorScheme(.dark)
+.presentationDetents([.medium,.large])
+}
+
+private var selectedID: String? {
+tab ==.primary? primaryID: secondaryID
+}
+
+private func isConflicting(_ option: NativeSubtitleOption) -> Bool {
+tab ==.primary? option.id == secondaryID: option.id == primaryID
+}
+
+private func select(_ id: String?) {
+if tab ==.primary {
+primaryID = id
+} else {
+secondaryID = id
+}
+}
 }
