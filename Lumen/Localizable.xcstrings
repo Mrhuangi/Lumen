@@ -4,16 +4,16 @@
     "%lld 分钟": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 分钟"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld min"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分钟"
           }
         }
       }
@@ -38,16 +38,16 @@
     "2026-11-04 之前": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "2026-11-04 之前"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Before 2026-11-04"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2026-11-04 之前"
           }
         }
       }
@@ -55,16 +55,16 @@
     "Profile 7（双层高动态范围）暂不支持系统原生播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Profile 7（双层高动态范围）暂不支持系统原生播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Profile 7 (dual-layer HDR) isn’t supported for native system playback yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile 7（双层高动态范围）暂不支持系统原生播放"
           }
         }
       }
@@ -89,16 +89,16 @@
     "一条音轨创建失败，已跳过": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一条音轨创建失败，已跳过"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "One audio track couldn’t be created and was skipped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一条音轨创建失败，已跳过"
           }
         }
       }
@@ -157,16 +157,16 @@
     "中文": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "中文"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Chinese"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中文"
           }
         }
       }
@@ -191,16 +191,16 @@
     "从「文件」导入": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "从「文件」导入"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Import from Files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从「文件」导入"
           }
         }
       }
@@ -208,16 +208,16 @@
     "优化": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "优化"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Improved"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "优化"
           }
         }
       }
@@ -225,16 +225,16 @@
     "修复": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "修复"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Fixed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修复"
           }
         }
       }
@@ -242,16 +242,16 @@
     "全部影片": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全部影片"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "All Videos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部影片"
           }
         }
       }
@@ -259,16 +259,16 @@
     "共 %lld 个视频，新加入 %lld 个。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "共 %lld 个视频，新加入 %lld 个。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld videos found, %lld newly added."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 个视频，新加入 %lld 个。"
           }
         }
       }
@@ -276,16 +276,16 @@
     "共 %lld 集": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "共 %lld 集"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld Episodes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 集"
           }
         }
       }
@@ -293,16 +293,16 @@
     "关于": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关于"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "About"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
           }
         }
       }
@@ -310,16 +310,16 @@
     "关闭": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
           }
         }
       }
@@ -327,16 +327,16 @@
     "关闭字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Subtitles Off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭字幕"
           }
         }
       }
@@ -344,16 +344,16 @@
     "兼容播放控制层：播放/暂停、进度拖动、音轨与字幕菜单、倍速菜单，双击两侧快退/快进 10 秒": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "兼容播放控制层：播放/暂停、进度拖动、音轨与字幕菜单、倍速菜单，双击两侧快退/快进 10 秒"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Compatibility player controls: play/pause, scrubbing, audio and subtitle menus, a speed menu, and double-tap either side to skip 10 seconds."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼容播放控制层：播放/暂停、进度拖动、音轨与字幕菜单、倍速菜单，双击两侧快退/快进 10 秒"
           }
         }
       }
@@ -361,16 +361,16 @@
     "内封图形字幕（PGS 等）无法在系统播放中显示，可切换兼容播放查看": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "内封图形字幕（PGS 等）无法在系统播放中显示，可切换兼容播放查看"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Embedded image subtitles (such as PGS) can’t be shown with the system player. Switch to compatibility playback to view them."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内封图形字幕（PGS 等）无法在系统播放中显示，可切换兼容播放查看"
           }
         }
       }
@@ -395,16 +395,16 @@
     "写入 MP4 失败：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "写入 MP4 失败：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Failed to write the MP4 file: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写入 MP4 失败：%@"
           }
         }
       }
@@ -412,16 +412,16 @@
     "写入 MP4 文件头失败：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "写入 MP4 文件头失败：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Failed to write the MP4 header: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写入 MP4 文件头失败：%@"
           }
         }
       }
@@ -429,16 +429,16 @@
     "分集": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分集"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Episodes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分集"
           }
         }
       }
@@ -446,16 +446,16 @@
     "列表": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "列表"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "List"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "列表"
           }
         }
       }
@@ -463,16 +463,16 @@
     "删除": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Delete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
           }
         }
       }
@@ -480,16 +480,16 @@
     "剧集": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "剧集"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "TV Shows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剧集"
           }
         }
       }
@@ -548,16 +548,16 @@
     "单个大文件（几个 GB）经系统选择器导出会很慢，建议用上面的「添加文件夹」加入它所在的文件夹。也可以把视频拷进「文件」App 里 Lumen 的文件夹，下次打开 App 时会自动入库。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "单个大文件（几个 GB）经系统选择器导出会很慢，建议用上面的「添加文件夹」加入它所在的文件夹。也可以把视频拷进「文件」App 里 Lumen 的文件夹，下次打开 App 时会自动入库。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Large files (several GB) export slowly through the system picker. Use Add Folder above for the folder that contains the file instead, or copy videos into the Lumen folder in the Files app — they are added automatically on next launch."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个大文件（几个 GB）经系统选择器导出会很慢，建议用上面的「添加文件夹」加入它所在的文件夹。也可以把视频拷进「文件」App 里 Lumen 的文件夹，下次打开 App 时会自动入库。"
           }
         }
       }
@@ -650,16 +650,16 @@
     "双引擎播放：MKV 等格式先无损重封装后用系统播放器播放，原生输出高动态范围与空间音频；系统不支持的格式自动切换兼容播放，直接读取原文件": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双引擎播放：MKV 等格式先无损重封装后用系统播放器播放，原生输出高动态范围与空间音频；系统不支持的格式自动切换兼容播放，直接读取原文件"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Dual-engine playback: MKV and similar formats are losslessly remuxed for the system player, with native HDR and spatial audio; unsupported formats switch to compatibility playback and read the original file directly."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎播放：MKV 等格式先无损重封装后用系统播放器播放，原生输出高动态范围与空间音频；系统不支持的格式自动切换兼容播放，直接读取原文件"
           }
         }
       }
@@ -667,16 +667,16 @@
     "双引擎播放：优先无损重封装＋系统播放器，原生输出高动态范围与空间音频；格式不支持时自动切换兼容播放，MKV 直接读取。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双引擎播放：优先无损重封装＋系统播放器，原生输出高动态范围与空间音频；格式不支持时自动切换兼容播放，MKV 直接读取。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Dual-engine playback: lossless remux with the system player first, for native HDR and spatial audio. Unsupported formats switch to the compatibility player, which reads MKV directly."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双引擎播放：优先无损重封装＋系统播放器，原生输出高动态范围与空间音频；格式不支持时自动切换兼容播放，MKV 直接读取。"
           }
         }
       }
@@ -684,16 +684,16 @@
     "图形": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图形"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图形"
           }
         }
       }
@@ -701,16 +701,16 @@
     "图标改为白底黑线": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图标改为白底黑线"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "New icon: black lines on white."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标改为白底黑线"
           }
         }
       }
@@ -718,16 +718,16 @@
     "在「文件源」页点「添加文件夹」，选一次文件夹，之后每次打开 App 都会自动把里面的新视频加入媒体库。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在「文件源」页点「添加文件夹」，选一次文件夹，之后每次打开 App 都会自动把里面的新视频加入媒体库。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "On the Sources page, tap Add Folder and pick a folder once. New videos inside are added automatically on every launch."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在「文件源」页点「添加文件夹」，选一次文件夹，之后每次打开 App 都会自动把里面的新视频加入媒体库。"
           }
         }
       }
@@ -735,16 +735,16 @@
     "基础播放、媒体库、剧集信息刮削与界面改版": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "基础播放、媒体库、剧集信息刮削与界面改版"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Basic playback, library, show-info scraping, and a redesigned interface."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基础播放、媒体库、剧集信息刮削与界面改版"
           }
         }
       }
@@ -752,16 +752,16 @@
     "复制全部": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "复制全部"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Copy All"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制全部"
           }
         }
       }
@@ -786,16 +786,16 @@
     "外挂字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外挂字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "External Subtitles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外挂字幕"
           }
         }
       }
@@ -803,16 +803,16 @@
     "外挂字幕字号": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外挂字幕字号"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "External Subtitle Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外挂字幕字号"
           }
         }
       }
@@ -820,16 +820,16 @@
     "外观": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外观"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观"
           }
         }
       }
@@ -837,16 +837,16 @@
     "多余的视频轨已跳过": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "多余的视频轨已跳过"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Extra video tracks were skipped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多余的视频轨已跳过"
           }
         }
       }
@@ -854,16 +854,16 @@
     "好": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "好"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
           }
         }
       }
@@ -871,16 +871,16 @@
     "媒体库": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "媒体库"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Library"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "媒体库"
           }
         }
       }
@@ -905,16 +905,16 @@
     "字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Subtitles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字幕"
           }
         }
       }
@@ -973,16 +973,16 @@
     "字幕轨缺少语言标记时，按轨道名称兜底识别中文/英文/日文字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "字幕轨缺少语言标记时，按轨道名称兜底识别中文/英文/日文字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "When a subtitle track has no language tag, Chinese, English, and Japanese tracks are recognized from the track name."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字幕轨缺少语言标记时，按轨道名称兜底识别中文/英文/日文字幕"
           }
         }
       }
@@ -1007,16 +1007,16 @@
     "导入、扫描、播放失败都会记在这里。遇到问题把日志复制发给我，就能定位在哪一步断的。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "导入、扫描、播放失败都会记在这里。遇到问题把日志复制发给我，就能定位在哪一步断的。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Import, scan, and playback failures are recorded here. If something goes wrong, copy the log and send it over to pinpoint the failing step."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入、扫描、播放失败都会记在这里。遇到问题把日志复制发给我，就能定位在哪一步断的。"
           }
         }
       }
@@ -1024,16 +1024,16 @@
     "导入单个文件": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "导入单个文件"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Import a File"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入单个文件"
           }
         }
       }
@@ -1041,16 +1041,33 @@
     "导入文件": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Files"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "导入文件"
           }
-        },
+        }
+      }
+    },
+    "小屏机型上播放界面两侧按钮被屏幕边缘裁切，现已修复：标题、关闭按钮与底部按钮完整显示": {
+      "extractionState": "manual",
+      "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import Files"
+            "value": "Fixed player controls being clipped by the screen edges on smaller phones; the title, close button and bottom controls are now fully visible"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "小屏机型上播放界面两侧按钮被屏幕边缘裁切，现已修复：标题、关闭按钮与底部按钮完整显示"
           }
         }
       }
@@ -1058,16 +1075,16 @@
     "已切换兼容播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已切换兼容播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Switched to Compatibility Playback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切换兼容播放"
           }
         }
       }
@@ -1109,16 +1126,16 @@
     "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Source “%@” added: %lld videos found, %lld newly added to the library."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。"
           }
         }
       }
@@ -1126,16 +1143,16 @@
     "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。之后每次打开 App 都会自动扫描。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。之后每次打开 App 都会自动扫描。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Source “%@” added: %lld videos found, %lld newly added to the library. Sources are scanned automatically on every launch."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已添加文件源「%@」：共找到 %lld 个视频，新加入媒体库 %lld 个。之后每次打开 App 都会自动扫描。"
           }
         }
       }
@@ -1143,16 +1160,16 @@
     "已看 %lld%%": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已看 %lld%%"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld%% Watched"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已看 %lld%%"
           }
         }
       }
@@ -1160,16 +1177,16 @@
     "应用标识全新启用：本版以全新应用安装，旧版可删除，片源需重新导入一次": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "应用标识全新启用：本版以全新应用安装，旧版可删除，片源需重新导入一次"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "New app identity: this version installs as a new app. The old version can be deleted; sources need to be imported once more."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用标识全新启用：本版以全新应用安装，旧版可删除，片源需重新导入一次"
           }
         }
       }
@@ -1245,16 +1262,16 @@
     "打开「文件」App →「浏览」→「我的 iPhone」→「Lumen」，把视频或整个文件夹拷进来，回到 Lumen 就会自动出现在媒体库里，不需要在 App 里做任何选择。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打开「文件」App →「浏览」→「我的 iPhone」→「Lumen」，把视频或整个文件夹拷进来，回到 Lumen 就会自动出现在媒体库里，不需要在 App 里做任何选择。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Open the Files app → Browse → On My iPhone → Lumen, and copy videos or whole folders in. They appear in your library automatically when you return to Lumen — no picking needed in the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开「文件」App →「浏览」→「我的 iPhone」→「Lumen」，把视频或整个文件夹拷进来，回到 Lumen 就会自动出现在媒体库里，不需要在 App 里做任何选择。"
           }
         }
       }
@@ -1279,16 +1296,16 @@
     "扫描": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "扫描"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Scanning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫描"
           }
         }
       }
@@ -1296,16 +1313,16 @@
     "扫描完成": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "扫描完成"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Scan Complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫描完成"
           }
         }
       }
@@ -1313,16 +1330,16 @@
     "扫描本机目录": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "扫描本机目录"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Scan Local Folder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫描本机目录"
           }
         }
       }
@@ -1330,16 +1347,16 @@
     "把电影、剧集的视频文件或整个文件夹拷进这里，回到 Lumen 就会自动出现在媒体库中。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "把电影、剧集的视频文件或整个文件夹拷进这里，回到 Lumen 就会自动出现在媒体库中。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Copy movie and TV video files — or whole folders — into this folder, and they’ll appear in your Lumen library automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把电影、剧集的视频文件或整个文件夹拷进这里，回到 Lumen 就会自动出现在媒体库中。"
           }
         }
       }
@@ -1347,16 +1364,16 @@
     "把视频放进这个文件夹.txt": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "把视频放进这个文件夹.txt"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Put Videos in This Folder.txt"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把视频放进这个文件夹.txt"
           }
         }
       }
@@ -1381,16 +1398,16 @@
     "排序": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "排序"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sort"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排序"
           }
         }
       }
@@ -1398,16 +1415,16 @@
     "搜索": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索"
           }
         }
       }
@@ -1415,16 +1432,16 @@
     "搜索片名": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索片名"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Search Titles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索片名"
           }
         }
       }
@@ -1432,16 +1449,16 @@
     "播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Play"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放"
           }
         }
       }
@@ -1449,16 +1466,16 @@
     "播放 %@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放 %@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Play %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放 %@"
           }
         }
       }
@@ -1466,16 +1483,16 @@
     "播放启用硬件解码，降低发热与功耗；缩略图与图片缓存加上限管理": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放启用硬件解码，降低发热与功耗；缩略图与图片缓存加上限管理"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Hardware decoding during playback, for less heat and lower power use; capped thumbnail and image caches."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放启用硬件解码，降低发热与功耗；缩略图与图片缓存加上限管理"
           }
         }
       }
@@ -1483,16 +1500,16 @@
     "播放器界面始终为深色，不受此设置影响。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放器界面始终为深色，不受此设置影响。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The player is always dark, regardless of this setting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放器界面始终为深色，不受此设置影响。"
           }
         }
       }
@@ -1500,16 +1517,16 @@
     "播放失败：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放失败：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Playback failed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放失败：%@"
           }
         }
       }
@@ -1534,16 +1551,16 @@
     "播放提示": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放提示"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Playback Notice"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放提示"
           }
         }
       }
@@ -1551,16 +1568,16 @@
     "播放时报「书签解析失败」无法播放：改用文件夹书签＋相对路径定位，已有条目自动修复": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放时报「书签解析失败」无法播放：改用文件夹书签＋相对路径定位，已有条目自动修复"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Playback failing with a bookmark error: items are now located by folder bookmark plus relative path, and existing items repair themselves automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放时报「书签解析失败」无法播放：改用文件夹书签＋相对路径定位，已有条目自动修复"
           }
         }
       }
@@ -1585,16 +1602,16 @@
     "播放速度": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放速度"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Playback Speed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放速度"
           }
         }
       }
@@ -1602,16 +1619,16 @@
     "播放默认选中内封中文字幕，并记住上次的播放速度": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放默认选中内封中文字幕，并记住上次的播放速度"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Embedded Chinese subtitles are selected by default, and your playback speed is remembered."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "播放默认选中内封中文字幕，并记住上次的播放速度"
           }
         }
       }
@@ -1619,16 +1636,16 @@
     "操作失败": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作失败"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Operation Failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失败"
           }
         }
       }
@@ -1653,16 +1670,16 @@
     "改用苹果式版本号": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "改用苹果式版本号"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Apple-style version numbers."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用苹果式版本号"
           }
         }
       }
@@ -1670,16 +1687,16 @@
     "数据": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "数据"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据"
           }
         }
       }
@@ -1687,16 +1704,16 @@
     "文件夹": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件夹"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Folder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件夹"
           }
         }
       }
@@ -1704,16 +1721,16 @@
     "文件源": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件源"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件源"
           }
         }
       }
@@ -1721,16 +1738,16 @@
     "文件源数量": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件源数量"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件源数量"
           }
         }
       }
@@ -1738,16 +1755,16 @@
     "文件源（文件夹）": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件源（文件夹）"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sources (Folders)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件源（文件夹）"
           }
         }
       }
@@ -1755,16 +1772,16 @@
     "文件选择改用系统 UIKit 选择器，侧载安装下更可靠": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件选择改用系统 UIKit 选择器，侧载安装下更可靠"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "File picking now uses the system UIKit picker, which is more reliable when sideloaded."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件选择改用系统 UIKit 选择器，侧载安装下更可靠"
           }
         }
       }
@@ -1772,16 +1789,16 @@
     "文件里没有视频轨": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件里没有视频轨"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The file has no video track."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件里没有视频轨"
           }
         }
       }
@@ -1789,16 +1806,16 @@
     "文本": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文本"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本"
           }
         }
       }
@@ -1806,16 +1823,16 @@
     "新入库 %lld 个视频。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新入库 %lld 个视频。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld new videos added."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新入库 %lld 个视频。"
           }
         }
       }
@@ -1823,16 +1840,16 @@
     "新增": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新增"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "New"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增"
           }
         }
       }
@@ -1857,16 +1874,16 @@
     "无损转换，不重新编码，速度取决于文件大小": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无损转换，不重新编码，速度取决于文件大小"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Lossless conversion with no re-encoding; speed depends on file size."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无损转换，不重新编码，速度取决于文件大小"
           }
         }
       }
@@ -1874,16 +1891,16 @@
     "无法创建输出文件：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法创建输出文件：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn’t create the output file: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法创建输出文件：%@"
           }
         }
       }
@@ -1891,16 +1908,16 @@
     "无法打开源文件：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法打开源文件：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn’t open the source file: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开源文件：%@"
           }
         }
       }
@@ -1908,16 +1925,16 @@
     "无法播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Unable to Play"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法播放"
           }
         }
       }
@@ -1925,16 +1942,16 @@
     "无法播放这个文件": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法播放这个文件"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This file can’t be played."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法播放这个文件"
           }
         }
       }
@@ -1942,16 +1959,16 @@
     "无法读取源文件信息：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法读取源文件信息：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn’t read the source file info: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取源文件信息：%@"
           }
         }
       }
@@ -1959,16 +1976,16 @@
     "无法读取这个文件（书签失效或链接不可用），请删除后重新导入。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法读取这个文件（书签失效或链接不可用），请删除后重新导入。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This file can’t be read (its bookmark is stale or the link is unavailable). Delete it and import it again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取这个文件（书签失效或链接不可用），请删除后重新导入。"
           }
         }
       }
@@ -1976,16 +1993,16 @@
     "日志": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日志"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Logs"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日志"
           }
         }
       }
@@ -1993,16 +2010,16 @@
     "日语": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日语"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Japanese"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日语"
           }
         }
       }
@@ -2010,16 +2027,16 @@
     "早期版本": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "早期版本"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Earlier Versions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "早期版本"
           }
         }
       }
@@ -2027,16 +2044,16 @@
     "显示": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "显示"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示"
           }
         }
       }
@@ -2044,16 +2061,16 @@
     "暂停": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂停"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pause"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停"
           }
         }
       }
@@ -2061,16 +2078,16 @@
     "暂无影片": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无影片"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No Videos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无影片"
           }
         }
       }
@@ -2078,16 +2095,16 @@
     "暂无日志": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无日志"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No Log Entries"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无日志"
           }
         }
       }
@@ -2112,16 +2129,16 @@
     "更换外挂字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更换外挂字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Change External Subtitles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更换外挂字幕"
           }
         }
       }
@@ -2129,16 +2146,16 @@
     "更新日志": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更新日志"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "What’s New"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新日志"
           }
         }
       }
@@ -2146,16 +2163,16 @@
     "更新日志页（设置 → 关于 → 更新日志）": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更新日志页（设置 → 关于 → 更新日志）"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "A What’s New page (Settings → About → What’s New)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新日志页（设置 → 关于 → 更新日志）"
           }
         }
       }
@@ -2163,16 +2180,16 @@
     "最近播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Recently Played"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近播放"
           }
         }
       }
@@ -2180,16 +2197,16 @@
     "最近添加": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近添加"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Recently Added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近添加"
           }
         }
       }
@@ -2231,16 +2248,16 @@
     "本地": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本地"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Local"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地"
           }
         }
       }
@@ -2248,16 +2265,16 @@
     "本机目录": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本机目录"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "On This iPhone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机目录"
           }
         }
       }
@@ -2265,16 +2282,16 @@
     "本机目录导入：把视频拷进「文件」App 的 Lumen 文件夹即可自动入库，也支持从其他 App 通过「打开方式」送入": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本机目录导入：把视频拷进「文件」App 的 Lumen 文件夹即可自动入库，也支持从其他 App 通过「打开方式」送入"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "On-device folder import: copy videos into the Lumen folder in the Files app to add them automatically; Open In from other apps is also supported."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机目录导入：把视频拷进「文件」App 的 Lumen 文件夹即可自动入库，也支持从其他 App 通过「打开方式」送入"
           }
         }
       }
@@ -2282,16 +2299,16 @@
     "正在准备…": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在准备…"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Preparing…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备…"
           }
         }
       }
@@ -2299,16 +2316,16 @@
     "正在匹配剧集信息…": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在匹配剧集信息…"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Matching Show Info…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在匹配剧集信息…"
           }
         }
       }
@@ -2316,16 +2333,16 @@
     "正在重封装 %lld%%": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在重封装 %lld%%"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remuxing %lld%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在重封装 %lld%%"
           }
         }
       }
@@ -2333,16 +2350,16 @@
     "每次打开 App 都会自动扫描文件源里的新视频。左滑可移除文件源（已入库的条目不受影响）。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每次打开 App 都会自动扫描文件源里的新视频。左滑可移除文件源（已入库的条目不受影响）。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sources are scanned for new videos on every launch. Swipe left to remove a source (library items are unaffected)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每次打开 App 都会自动扫描文件源里的新视频。左滑可移除文件源（已入库的条目不受影响）。"
           }
         }
       }
@@ -2350,16 +2367,16 @@
     "没有写出任何数据包": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有写出任何数据包"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No packets were written."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有写出任何数据包"
           }
         }
       }
@@ -2367,16 +2384,16 @@
     "没有发现新视频。先把视频拷进「文件」App 的 Lumen 文件夹再试。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有发现新视频。先把视频拷进「文件」App 的 Lumen 文件夹再试。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No new videos found. Copy videos into the Lumen folder in the Files app and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有发现新视频。先把视频拷进「文件」App 的 Lumen 文件夹再试。"
           }
         }
       }
@@ -2384,16 +2401,16 @@
     "没有系统播放器可解码的音轨": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有系统播放器可解码的音轨"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No audio track the system player can decode."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有系统播放器可解码的音轨"
           }
         }
       }
@@ -2401,16 +2418,16 @@
     "浅色": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "浅色"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Light"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浅色"
           }
         }
       }
@@ -2418,16 +2435,16 @@
     "深色": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "深色"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Dark"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色"
           }
         }
       }
@@ -2435,16 +2452,16 @@
     "添加一个文件夹作为文件源，视频会自动入库。\nMKV 自动无损转换后以系统播放器播放，特殊格式自动切换兼容播放。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加一个文件夹作为文件源，视频会自动入库。\nMKV 自动无损转换后以系统播放器播放，特殊格式自动切换兼容播放。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Add a folder as a source and videos are added automatically.\nMKV files are losslessly converted for the system player; unsupported formats switch to the compatibility player automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加一个文件夹作为文件源，视频会自动入库。\nMKV 自动无损转换后以系统播放器播放，特殊格式自动切换兼容播放。"
           }
         }
       }
@@ -2469,16 +2486,16 @@
     "添加外挂字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加外挂字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Add External Subtitles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加外挂字幕"
           }
         }
       }
@@ -2486,16 +2503,16 @@
     "添加文件夹": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加文件夹"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Add Folder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加文件夹"
           }
         }
       }
@@ -2503,16 +2520,16 @@
     "清空日志": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清空日志"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Clear Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空日志"
           }
         }
       }
@@ -2520,16 +2537,16 @@
     "清除全部文件源": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清除全部文件源"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remove All Sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除全部文件源"
           }
         }
       }
@@ -2537,16 +2554,16 @@
     "清除续播记录": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清除续播记录"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Clear Resume Data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除续播记录"
           }
         }
       }
@@ -2554,16 +2571,16 @@
     "清除重封装缓存": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清除重封装缓存"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Clear Remux Cache"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除重封装缓存"
           }
         }
       }
@@ -2571,16 +2588,16 @@
     "演职人员": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "演职人员"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Cast"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演职人员"
           }
         }
       }
@@ -2588,16 +2605,16 @@
     "片名": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "片名"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Title"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "片名"
           }
         }
       }
@@ -2639,16 +2656,16 @@
     "版本": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "版本"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本"
           }
         }
       }
@@ -2656,16 +2673,16 @@
     "电影与其他": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "电影与其他"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Movies & More"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电影与其他"
           }
         }
       }
@@ -2673,16 +2690,16 @@
     "画中画仅在系统播放时可用；字幕字号用于系统播放的外挂字幕叠加显示。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "画中画仅在系统播放时可用；字幕字号用于系统播放的外挂字幕叠加显示。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Picture in Picture is available only with the system player. Subtitle size applies to external subtitles overlaid during system playback."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画中画仅在系统播放时可用；字幕字号用于系统播放的外挂字幕叠加显示。"
           }
         }
       }
@@ -2690,16 +2707,16 @@
     "界面全面打磨：媒体库、剧集详情、文件源与设置页排版统一，苹果风格材质与字阶": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "界面全面打磨：媒体库、剧集详情、文件源与设置页排版统一，苹果风格材质与字阶"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Polished interface throughout: consistent layout across Library, show details, Sources, and Settings, with Apple-style materials and type hierarchy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "界面全面打磨：媒体库、剧集详情、文件源与设置页排版统一，苹果风格材质与字阶"
           }
         }
       }
@@ -2741,16 +2758,16 @@
     "直链": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "直链"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Direct Link"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直链"
           }
         }
       }
@@ -2758,16 +2775,16 @@
     "移除外挂字幕": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除外挂字幕"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remove External Subtitles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除外挂字幕"
           }
         }
       }
@@ -2792,16 +2809,16 @@
     "章节 %lld": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "章节 %lld"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Chapter %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "章节 %lld"
           }
         }
       }
@@ -2826,16 +2843,16 @@
     "第 %lld 集 · %@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "第 %lld 集 · %@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Episode %lld · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 集 · %@"
           }
         }
       }
@@ -2843,16 +2860,16 @@
     "继续播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue Playing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续播放"
           }
         }
       }
@@ -2860,16 +2877,16 @@
     "继续播放 %@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续播放 %@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Resume %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续播放 %@"
           }
         }
       }
@@ -2877,16 +2894,33 @@
     "继续观看": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue Watching"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "继续观看"
           }
-        },
+        }
+      }
+    },
+    "续播过的视频再次打开时黑屏、进度归零，现已修复：重播会从上次看到的位置继续": {
+      "extractionState": "manual",
+      "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continue Watching"
+            "value": "Fixed a black screen with progress reset to zero when reopening a video you had already started; playback now resumes from where you left off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "续播过的视频再次打开时黑屏、进度归零，现已修复：重播会从上次看到的位置继续"
           }
         }
       }
@@ -2894,16 +2928,16 @@
     "网格": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "网格"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Grid"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网格"
           }
         }
       }
@@ -2911,16 +2945,16 @@
     "自动续播": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动续播"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Auto Resume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动续播"
           }
         }
       }
@@ -2928,16 +2962,16 @@
     "自动连播下一集": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动连播下一集"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Auto-Play Next Episode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动连播下一集"
           }
         }
       }
@@ -2945,16 +2979,16 @@
     "英语": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "英语"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "English"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "英语"
           }
         }
       }
@@ -2962,16 +2996,16 @@
     "视频": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "视频"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Video"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频"
           }
         }
       }
@@ -2979,16 +3013,33 @@
     "视频总数": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total Videos"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "视频总数"
           }
-        },
+        }
+      }
+    },
+    "视频无法打开时没有任何提示，现会明确显示「无法播放这个文件」": {
+      "extractionState": "manual",
+      "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Total Videos"
+            "value": "A video that cannot be opened now shows a clear message instead of failing silently"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频无法打开时没有任何提示，现会明确显示「无法播放这个文件」"
           }
         }
       }
@@ -2996,16 +3047,16 @@
     "视频流创建失败": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "视频流创建失败"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Failed to create the video stream."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频流创建失败"
           }
         }
       }
@@ -3013,16 +3064,16 @@
     "视频编码 %@ 无法用系统播放器播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "视频编码 %@ 无法用系统播放器播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The %@ video codec can’t be played by the system player."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频编码 %@ 无法用系统播放器播放"
           }
         }
       }
@@ -3030,16 +3081,16 @@
     "记住播放速度": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "记住播放速度"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remember Playback Speed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记住播放速度"
           }
         }
       }
@@ -3047,16 +3098,16 @@
     "设置": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
           }
         }
       }
@@ -3064,16 +3115,16 @@
     "跟随系统": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "跟随系统"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统"
           }
         }
       }
@@ -3132,16 +3183,16 @@
     "轨道 %lld": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "轨道 %lld"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Track %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轨道 %lld"
           }
         }
       }
@@ -3149,16 +3200,16 @@
     "还没有添加文件夹。添加后，文件夹里的视频会原地读取、自动入库，不拷贝文件。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还没有添加文件夹。添加后，文件夹里的视频会原地读取、自动入库，不拷贝文件。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No folders added yet. Videos in an added folder are read in place and added automatically — nothing is copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有添加文件夹。添加后，文件夹里的视频会原地读取、自动入库，不拷贝文件。"
           }
         }
       }
@@ -3166,16 +3217,16 @@
     "退出时自动画中画": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "退出时自动画中画"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Auto Picture in Picture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出时自动画中画"
           }
         }
       }
@@ -3183,16 +3234,16 @@
     "适配 iOS 27：文件导入与「文件」App 中的 Lumen 文件夹恢复正常": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "适配 iOS 27：文件导入与「文件」App 中的 Lumen 文件夹恢复正常"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "iOS 27 support: file import and the Lumen folder in the Files app work again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适配 iOS 27：文件导入与「文件」App 中的 Lumen 文件夹恢复正常"
           }
         }
       }
@@ -3200,16 +3251,16 @@
     "适配 iPhone 12 及后续机型，5.4 英寸到 6.9 英寸全尺寸响应式布局": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "适配 iPhone 12 及后续机型，5.4 英寸到 6.9 英寸全尺寸响应式布局"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Supports iPhone 12 and later, with a responsive layout across all sizes from 5.4″ to 6.9″."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "适配 iPhone 12 及后续机型，5.4 英寸到 6.9 英寸全尺寸响应式布局"
           }
         }
       }
@@ -3234,16 +3285,16 @@
     "部分音轨格式系统不支持，已跳过：%@": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "部分音轨格式系统不支持，已跳过：%@"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Some audio tracks use formats the system doesn’t support and were skipped: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分音轨格式系统不支持，已跳过：%@"
           }
         }
       }
@@ -3251,16 +3302,16 @@
     "重封装在大型高动态范围文件上卡死、异常发热与闪退": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重封装在大型高动态范围文件上卡死、异常发热与闪退"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remuxing stalling, overheating, and crashing on large HDR files."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重封装在大型高动态范围文件上卡死、异常发热与闪退"
           }
         }
       }
@@ -3268,16 +3319,16 @@
     "重封装已取消": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重封装已取消"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remuxing Canceled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重封装已取消"
           }
         }
       }
@@ -3285,16 +3336,16 @@
     "重封装缓存已清除。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重封装缓存已清除。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remux cache cleared."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重封装缓存已清除。"
           }
         }
       }
@@ -3302,16 +3353,16 @@
     "重封装缓存：同一文件第二次播放免重封装": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重封装缓存：同一文件第二次播放免重封装"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remux cache: a file plays instantly the second time, with no remuxing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重封装缓存：同一文件第二次播放免重封装"
           }
         }
       }
@@ -3319,16 +3370,16 @@
     "重新扫描": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新扫描"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Rescan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新扫描"
           }
         }
       }
@@ -3336,16 +3387,16 @@
     "重新扫描全部": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新扫描全部"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Rescan All"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新扫描全部"
           }
         }
       }
@@ -3353,16 +3404,16 @@
     "重新扫描完成：共 %lld 个视频，新加入 %lld 个。": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新扫描完成：共 %lld 个视频，新加入 %lld 个。"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Rescan complete: %lld videos found, %lld newly added."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新扫描完成：共 %lld 个视频，新加入 %lld 个。"
           }
         }
       }
@@ -3370,16 +3421,16 @@
     "错误日志": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "错误日志"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Error Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "错误日志"
           }
         }
       }
@@ -3387,16 +3438,16 @@
     "韩语": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "韩语"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Korean"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "韩语"
           }
         }
       }
@@ -3404,16 +3455,16 @@
     "音轨": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "音轨"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Audio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音轨"
           }
         }
       }
@@ -3438,16 +3489,16 @@
     "首次启动在本机目录生成说明文件，方便在「文件」App 里找到 Lumen 文件夹": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首次启动在本机目录生成说明文件，方便在「文件」App 里找到 Lumen 文件夹"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "A note file is created in the on-device folder on first launch, so the Lumen folder is easy to find in the Files app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次启动在本机目录生成说明文件，方便在「文件」App 里找到 Lumen 文件夹"
           }
         }
       }
@@ -3455,16 +3506,16 @@
     "高动态范围": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "高动态范围"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "HDR"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "高动态范围"
           }
         }
       }
@@ -3472,16 +3523,16 @@
     "高动态范围配置未写入输出文件（自检未通过），将按普通 HDR 播放": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "高动态范围配置未写入输出文件（自检未通过），将按普通 HDR 播放"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "HDR metadata wasn’t written to the output file (self-check failed); playing as regular HDR."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "高动态范围配置未写入输出文件（自检未通过），将按普通 HDR 播放"
           }
         }
       }
