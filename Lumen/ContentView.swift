@@ -1732,11 +1732,13 @@ private var topChrome: some View {
 VStack {
 HStack(alignment:.top, spacing: 10) {
 if isMPV {
-// 直读路没有系统标题层，自绘标题（随控件显隐）；原生路标题由系统控件显示
+// 直读路没有系统标题层，自绘标题（随控件显隐）；原生路标题由系统控件显示。
+// 长标题尾部截断显示省略号，绝不顶出左边缘（1.2.1 小屏适配修复）
 Text(title)
 .font(.headline)
 .foregroundStyle(.white)
 .lineLimit(1)
+.truncationMode(.tail)
 .shadow(color:.black.opacity(0.55), radius: 4, y: 1)
 .padding(.top, 7)
 }
@@ -1769,7 +1771,11 @@ chip(activeError)
 }
 Spacer()
 }
-.padding()
+// 宽度钉死为父级给到的整屏宽、左右各留 16pt（与底部面板外边距同规格）：
+// 不再依赖内容自适应宽度，避免任一子元素把整栏撑出屏幕后居中裁掉两头（1.2.1）
+.frame(maxWidth:.infinity)
+.padding(.horizontal, 16)
+.padding(.top, 8)
 }
 
 private func chromeButton(_ systemImage: String, label: String,
@@ -1791,9 +1797,13 @@ private func chip(_ text: String) -> some View {
 Text(text)
 .font(.footnote)
 .foregroundStyle(.white)
+.lineLimit(2)
+.multilineTextAlignment(.trailing)
 .padding(.horizontal, 12)
 .padding(.vertical, 8)
 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12, style:.continuous))
+// 提示/报错文本再长也只在本栏内换行，不许把顶栏撑宽（1.2.1）
+.frame(maxWidth: 260, alignment:.trailing)
 }
 
 /// 原生路的「跳过片尾」（片尾窗口内出现，与直读路一致）
