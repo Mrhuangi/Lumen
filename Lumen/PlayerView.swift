@@ -8,6 +8,8 @@ import UIKit
 struct PlayerView: UIViewControllerRepresentable {
     let player: AVPlayer
     var subtitleText: String = ""
+    /// 副字幕（双字幕的第二条）：叠加在主字幕上方一行显示
+    var secondarySubtitleText: String = ""
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -18,28 +20,40 @@ struct PlayerView: UIViewControllerRepresentable {
         controller.canStartPictureInPictureAutomaticallyFromInline = true
         controller.videoGravity = .resizeAspect
 
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
-        label.textColor = .white
-        label.shadowColor = UIColor.black.withAlphaComponent(0.9)
-        label.shadowOffset = CGSize(width: 0, height: 1)
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.35)
-        label.layer.cornerRadius = 6
-        label.layer.masksToBounds = true
-        label.isHidden = true
-        label.translatesAutoresizingMaskIntoConstraints = false
+        func makeSubtitleLabel() -> UILabel {
+            let label = UILabel()
+            label.numberOfLines = 0
+            label.textAlignment = .center
+            label.font = .systemFont(ofSize: 17, weight: .semibold)
+            label.textColor = .white
+            label.shadowColor = UIColor.black.withAlphaComponent(0.9)
+            label.shadowOffset = CGSize(width: 0, height: 1)
+            label.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+            label.layer.cornerRadius = 6
+            label.layer.masksToBounds = true
+            label.isHidden = true
+            label.translatesAutoresizingMaskIntoConstraints = false
+            return label
+        }
+        let label = makeSubtitleLabel()
+        let secondaryLabel = makeSubtitleLabel()
+        secondaryLabel.alpha = 0.92
         if let overlay = controller.contentOverlayView {
             overlay.addSubview(label)
+            overlay.addSubview(secondaryLabel)
             NSLayoutConstraint.activate([
                 label.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
                 label.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -52),
                 label.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 32),
-                label.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -32)
+                label.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -32),
+                secondaryLabel.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+                secondaryLabel.bottomAnchor.constraint(equalTo: label.topAnchor, constant: -6),
+                secondaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 32),
+                secondaryLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -32)
             ])
         }
         context.coordinator.label = label
+        context.coordinator.secondaryLabel = secondaryLabel
         return controller
     }
 
@@ -53,14 +67,21 @@ struct PlayerView: UIViewControllerRepresentable {
         let label = context.coordinator.label
         label?.text = subtitleText.isEmpty ? nil : " \(subtitleText) "
         label?.isHidden = subtitleText.isEmpty
-        // 外挂字幕字号跟随设置（默认 17）
+        let secondaryLabel = context.coordinator.secondaryLabel
+        secondaryLabel?.text = secondarySubtitleText.isEmpty ? nil : " \(secondarySubtitleText) "
+        secondaryLabel?.isHidden = secondarySubtitleText.isEmpty
+        // 叠加字幕字号跟随设置（默认 17，主副同号）
         let size = UserDefaults.standard.object(forKey: "settings.subFontSize") as? Double ?? 17
         if let label, label.font.pointSize != CGFloat(size) {
             label.font = .systemFont(ofSize: CGFloat(size), weight: .semibold)
+        }
+        if let secondaryLabel, secondaryLabel.font.pointSize != CGFloat(size) {
+            secondaryLabel.font = .systemFont(ofSize: CGFloat(size), weight: .semibold)
         }
     }
 
     final class Coordinator {
         weak var label: UILabel?
+        weak var secondaryLabel: UILabel?
     }
 }
