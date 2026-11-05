@@ -13,6 +13,8 @@
 		D000000000000000000000B4 /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000004 /* PlayerModel.swift */; };
 		D000000000000000000000B5 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000005 /* LibraryStore.swift */; };
 		D000000000000000000000B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000007 /* Assets.xcassets */; };
+		D000000000000000000000E1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D000000000000000000000D1 /* Localizable.xcstrings */; };
+		D000000000000000000000E2 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D000000000000000000000D2 /* InfoPlist.xcstrings */; };
 		D000000000000000000000BA /* SubtitleTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000019 /* SubtitleTools.swift */; };
 		D000000000000000000000BB /* FFmpegRemuxer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000020 /* FFmpegRemuxer.swift */; };
 		D000000000000000000000BC /* MetalLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000021 /* MetalLayer.swift */; };
@@ -34,6 +36,8 @@
 		D00000000000000000000005 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
 		D00000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D00000000000000000000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D000000000000000000000D1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		D000000000000000000000D2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		D00000000000000000000008 /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D00000000000000000000019 /* SubtitleTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTools.swift; sourceTree = "<group>"; };
 		D00000000000000000000020 /* FFmpegRemuxer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegRemuxer.swift; sourceTree = "<group>"; };
@@ -93,6 +97,8 @@
 				D00000000000000000000026 /* MPVPlayerModel.swift */,
 				D00000000000000000000027 /* MPVControlsView.swift */,
 				D00000000000000000000028 /* Changelog.swift */,
+				D000000000000000000000D1 /* Localizable.xcstrings */,
+				D000000000000000000000D2 /* InfoPlist.xcstrings */,
 				D00000000000000000000006 /* Info.plist */,
 				D00000000000000000000007 /* Assets.xcassets */,
 			);
@@ -139,11 +145,12 @@
 			};
 			buildConfigurationList = D00000000000000000000015 /* Build configuration list for PBXProject "Lumen" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = D00000000000000000000009;
 			packageReferences = (
@@ -164,6 +171,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D000000000000000000000B7 /* Assets.xcassets in Resources */,
+				D000000000000000000000E1 /* Localizable.xcstrings in Resources */,
+				D000000000000000000000E2 /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,7 +284,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mrhuangi.lumen;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -301,7 +310,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mrhuangi.lumen;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
