@@ -257,7 +257,7 @@ final class FFmpegRemuxer {
             outStream.pointee.time_base = inStream.pointee.time_base
             // 语言/标题元数据带过去，系统播放器的轨道菜单能显示正确名称
             for key in ["language", "title"] {
-                if let value = Self.metadataValue(inStream.pointee.metadata, key) {
+                if let value = Self.metadataValue(inStream, key) {
                     var dict = outStream.pointee.metadata
                     av_dict_set(&dict, key, value, 0)
                     outStream.pointee.metadata = dict
@@ -306,8 +306,8 @@ final class FFmpegRemuxer {
             let stream = inStreams[i]
             subtitleBuilders[i] = SubtitleCueBuilder(
                 codecID: stream.pointee.codecpar.pointee.codec_id,
-                lang: Self.metadataValue(stream.pointee.metadata, "language") ?? "",
-                title: Self.metadataValue(stream.pointee.metadata, "title") ?? "",
+                lang: Self.metadataValue(stream, "language") ?? "",
+                title: Self.metadataValue(stream, "title") ?? "",
                 timeBase: stream.pointee.time_base)
         }
 
@@ -513,8 +513,11 @@ final class FFmpegRemuxer {
         Set(["subrip", "text", "ssa", "ass", "srt", "mov_text", "webvtt"].compactMap { codecID($0) })
     }()
 
-    private static func metadataValue(_ dict: UnsafeMutablePointer<AVDictionary>?, _ key: String) -> String? {
-        guard let dict, let entry = av_dict_get(dict, key, nil, 0),
+    private static func metadataValue(_ stream: UnsafeMutablePointer<AVStream>?, _ key: String) -> String? {
+        // 注：AVDictionary 在当前 FFmpeg 模块化下无法直接写出类型名（编译器找不到），
+        // 故从 AVStream 入手、让 metadata 的类型由编译器推断，不显式命名。
+        guard let stream, let dict = stream.pointee.metadata,
+              let entry = av_dict_get(dict, key, nil, 0),
               let valuePtr = entry.pointee.value else { return nil }
         return String(cString: valuePtr)
     }
