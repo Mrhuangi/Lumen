@@ -9,9 +9,13 @@ public protocol MPVPlayerDelegate: AnyObject {
     func mpvFileLoaded(mpv: OpaquePointer)
     /// 播放结束：reason 为 mpv 的 end-file reason（0=自然播完 EOF，4=出错），error 非空表示错误信息
     func mpvEndFile(mpv: OpaquePointer, reason: Int32, error: String?)
+    /// loadfile 命令本身被引擎拒绝（如参数非法）：文件根本没有开始加载，
+    /// 不会再有 END_FILE 事件，必须单独上报，否则界面只剩静默黑屏
+    func mpvLoadFailed(mpv: OpaquePointer, error: String)
 }
 
 public extension MPVPlayerDelegate {
     func mpvFileLoaded(mpv: OpaquePointer) {}
     func mpvEndFile(mpv: OpaquePointer, reason: Int32, error: String?) {}
+    func mpvLoadFailed(mpv: OpaquePointer, error: String) {}
 }
