@@ -15,6 +15,7 @@ enum MPVProperty {
     static let timePos = "time-pos"
     static let duration = "duration"
     static let trackList = "track-list"
+    static let chapterList = "chapter-list"
     static let speed = "speed"
     static let width = "width"
     static let height = "height"
