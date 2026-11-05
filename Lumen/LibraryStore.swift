@@ -75,9 +75,9 @@ final class LibraryStore: ObservableObject {
     /// 首次启动时在本机目录放一个说明文件，确保「文件」App 里能看到 Lumen 文件夹
     private func ensureLocalFolderPlaceholder() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let marker = docs.appendingPathComponent("把视频放进这个文件夹.txt")
+        let marker = docs.appendingPathComponent(String(localized: "把视频放进这个文件夹.txt"))
         if !FileManager.default.fileExists(atPath: marker.path) {
-            try? "把电影、剧集的视频文件或整个文件夹拷进这里，回到 Lumen 就会自动出现在媒体库中。".write(to: marker, atomically: true, encoding: .utf8)
+            try? String(localized: "把电影、剧集的视频文件或整个文件夹拷进这里，回到 Lumen 就会自动出现在媒体库中。").write(to: marker, atomically: true, encoding: .utf8)
         }
     }
 
@@ -272,7 +272,7 @@ final class LibraryStore: ObservableObject {
             var stale = false
             let name = (try? URL(resolvingBookmarkData: old, options: [],
                                  relativeTo: nil, bookmarkDataIsStale: &stale))?.lastPathComponent
-                ?? UserDefaults.standard.string(forKey: folderNameKey) ?? "文件夹"
+                ?? UserDefaults.standard.string(forKey: folderNameKey) ?? String(localized: "文件夹")
             sources = [SourceFolder(name: name, bookmark: old)]
             persistSources()
         }
@@ -373,13 +373,26 @@ final class LibraryStore: ObservableObject {
 
     /// 同一部剧的下一集（按文件名识别剧集；没有下一集返回 nil）
     func nextInSeries(after item: MediaItem) -> MediaItem? {
-        guard let info = EpisodeParser.parse(item.name) else { return nil }
-        let episodes = items
-            .filter { EpisodeParser.parse($0.name)?.show == info.show }
-            .sorted(by: EpisodeParser.episodeSort)
+        let episodes = episodesInSeries(of: item)
         guard let index = episodes.firstIndex(where: { $0.id == item.id }),
               index + 1 < episodes.count else { return nil }
         return episodes[index + 1]
+    }
+
+    func previousInSeries(before item: MediaItem) -> MediaItem? {
+        let episodes = episodesInSeries(of: item)
+        guard let index = episodes.firstIndex(where: { $0.id == item.id }),
+              index > 0 else { return nil }
+        return episodes[index - 1]
+    }
+
+    /// 同剧全部分集（按季/集排序）；不是剧集条目时只返回它自己
+    func episodesInSeries(of item: MediaItem) -> [MediaItem] {
+        guard let info = EpisodeParser.parse(item.name) else { return [item] }
+        let episodes = items
+            .filter { EpisodeParser.parse($0.name)?.show == info.show }
+            .sorted(by: EpisodeParser.episodeSort)
+        return episodes.isEmpty ? [item] : episodes
     }
 
     // MARK: - 解析可播放地址
@@ -464,7 +477,7 @@ final class LibraryStore: ObservableObject {
         return cues.isEmpty ? nil : cues
     }
 
-    /// 解析外挂字幕文件的可读 URL（供兼容播放以 sub-add 直接加载，字幕由引擎渲染）；
+    /// 解析外挂字幕文件的可读 URL（供直读播放以 sub-add 直接加载，字幕由引擎渲染）；
     /// 没有挂载或书签失效返回 nil。访问权保持到 stopAccessing()（与视频同一生命周期）。
     func externalSubtitleURL(for item: MediaItem) -> URL? {
         guard let data = item.subtitleBookmark else { return nil }
