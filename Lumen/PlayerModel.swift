@@ -12,23 +12,44 @@ final class PlayerModel: ObservableObject {
     /// 视频是否为横屏（nil = 还没读到尺寸），播放器据此自动转横屏全屏
     @Published var videoIsLandscape: Bool?
 
-    // 外挂字幕（叠加显示）：条目 + 当前时刻应显示的文本
+    // 外挂字幕（叠加显示）：主字幕条目 + 当前时刻应显示的文本
     @Published private(set) var externalCues: [SubtitleCue] = []
     @Published var currentSubtitleText: String = ""
+    // 副字幕（双字幕的第二条，叠加在主字幕上方一行）
+    @Published private(set) var secondaryCues: [SubtitleCue] = []
+    @Published var currentSecondarySubtitleText: String = ""
+
+    /// 是否暂停（由 timeControlStatus 同步，供外壳统一控件显隐判断）
+    @Published private(set) var isPaused = true
+    /// 片尾窗口已到达（界面据此显示「跳过片尾」按钮）
+    @Published private(set) var outroPromptVisible = false
 
     private var timeObserver: Any?
     private var currentKey: String = ""
     private var didSeekToResume = false
     private var statusObservation: NSKeyValueObservation?
+    private var rateObservation: NSKeyValueObservation?
     private var endObserver: NSObjectProtocol?
+    private var outroFired = false
 
     /// 播放结束回调（用于自动连播下一集）
     var onPlaybackEnded: (() -> Void)?
+    /// 到达片尾窗口且存在下一集时的回调（由播放流程决定是否切集）
+    var onOutroReached: (() -> Void)?
+    /// 用户点「跳过片尾」按钮的回调（明确意图，播放流程直接切集，不受自动连播开关约束）
+    var onSkipOutroRequested: (() -> Void)?
+    /// 是否存在可切的下一集（播放流程设置）
+    var outroAdvanceAvailable = false
 
     init() {
         // 允许画中画 / 后台继续播放（需配合 Info.plist 的 UIBackgroundModes=audio 与音频会话）
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try? AVAudioSession.sharedInstance().setActive(true)
+
+        rateObservation = player.observe(\.timeControlStatus, options: [.initial, .new]) { [weak self] player, _ in
+            let paused = player.timeControlStatus != .playing
+            Task { @MainActor in self?.isPaused = paused }
+        }
 
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
@@ -43,6 +64,7 @@ final class PlayerModel: ObservableObject {
             }
             if seconds.isFinite {
                 self.updateCurrentSubtitle(at: seconds)
+                self.checkOutro(at: seconds)
             }
             // 记住播放速度（用户在系统界面改了倍速就存下来，下次自动沿用）
             let rate = Double(self.player.rate)
@@ -63,6 +85,9 @@ final class PlayerModel: ObservableObject {
         formatBadge = ""
         errorMessage = nil
         videoIsLandscape = nil
+        outroPromptVisible = false
+        outroFired = false
+        isPaused = true
 
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
@@ -83,6 +108,7 @@ final class PlayerModel: ObservableObject {
                     self.detectFormat(asset: asset)
                     self.detectOrientation(asset: asset)
                     self.resumeIfNeeded(item: item)
+                    self.skipIntroIfNeeded(item: item)
                     if let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .legible) {
                         if !self.externalCues.isEmpty {
                             item.select(nil, in: group) // 有外挂字幕时不叠内封字幕
@@ -107,10 +133,63 @@ final class PlayerModel: ObservableObject {
                     }
                 case .failed:
                     self.errorMessage = item.error?.localizedDescription
-                        ?? "无法播放这个文件（格式可能不受系统支持，例如 MKV 需要先转封装成 MP4）"
+                        ?? String(localized: "无法播放这个文件")
                 default:
                     break
                 }
+            }
+        }
+    }
+
+    /// 跳过片头：续播定位后若仍落在片头范围内，直接跳到片头结束（与直读路同一策略）
+    private func skipIntroIfNeeded(item: AVPlayerItem) {
+        guard PlayerSettings.skipIntroOutro else { return }
+        let intro = PlayerSettings.introSeconds
+        let duration = item.duration.seconds
+        guard intro > 0, duration.isFinite,
+              duration > intro + PlayerSettings.outroSeconds + 30 else { return }
+        // 续播 seek 是异步的，稍等一拍再读实际位置决定是否跳
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self else { return }
+            let pos = self.player.currentTime().seconds
+            if pos.isFinite, pos < intro {
+                self.player.seek(to: CMTime(seconds: intro, preferredTimescale: 600),
+                                 toleranceBefore: .zero, toleranceAfter: .zero)
+                AppLog.add("播放", "已跳过片头（\(Int(intro)) 秒）")
+            }
+        }
+    }
+
+    /// 片尾窗口检测：进入窗口显示跳过按钮；有下一集时自动切集一次
+    private func checkOutro(at seconds: Double) {
+        guard PlayerSettings.skipIntroOutro else {
+            if outroPromptVisible { outroPromptVisible = false }
+            return
+        }
+        let outro = PlayerSettings.outroSeconds
+        let duration = player.currentItem?.duration.seconds ?? 0
+        guard outro > 0, duration.isFinite, duration > 0 else { return }
+        if duration - seconds <= outro, seconds > 3 {
+            outroPromptVisible = true
+            if outroAdvanceAvailable, !outroFired {
+                outroFired = true
+                onOutroReached?()
+            }
+        } else if outroPromptVisible, duration - seconds > outro + 5 {
+            outroPromptVisible = false
+        }
+    }
+
+    /// 「跳过片尾」按钮：有下一集则切集，否则跳到结尾
+    func skipOutro() {
+        outroPromptVisible = false
+        if outroAdvanceAvailable {
+            outroFired = true
+            (onSkipOutroRequested ?? onOutroReached)?()
+        } else {
+            let duration = player.currentItem?.duration.seconds ?? 0
+            if duration.isFinite, duration > 0 {
+                player.seek(to: CMTime(seconds: max(duration - 0.5, 0), preferredTimescale: 600))
             }
         }
     }
@@ -151,7 +230,7 @@ final class PlayerModel: ObservableObject {
             let badge: String
             switch code {
             case "dvh1", "dvhe", "dvh5", "dvvt": // 高动态范围（动态元数据）常见子类型
-                badge = "高动态范围"
+                badge = String(localized: "高动态范围")
             case "hvc1", "hev1":
                 badge = "HEVC"
             case "avc1":
@@ -178,29 +257,35 @@ final class PlayerModel: ObservableObject {
         statusObservation = nil
     }
 
-    // MARK: - 外挂字幕
+    // MARK: - 叠加字幕（主＋副双字幕）
 
-    /// 设置外挂字幕条目；有外挂时关掉内封字幕的默认选中，避免两层字幕重叠
-    func setExternalSubtitles(_ cues: [SubtitleCue]) {
-        externalCues = cues
+    /// 设置叠加字幕（主/副两条）：来源是外挂文件或重封装提取的内封字幕 cues。
+    /// 任一条非空时关掉系统内封字幕的默认选中，避免与叠加层重叠。
+    func setOverlaySubtitles(primary: [SubtitleCue], secondary: [SubtitleCue]) {
+        externalCues = primary
+        secondaryCues = secondary
         currentSubtitleText = ""
-        guard !cues.isEmpty,
+        currentSecondarySubtitleText = ""
+        guard !primary.isEmpty || !secondary.isEmpty,
               let item = player.currentItem,
               let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .legible) else { return }
         item.select(nil, in: group)
     }
 
     private func updateCurrentSubtitle(at seconds: Double) {
-        guard !externalCues.isEmpty else {
-            if !currentSubtitleText.isEmpty { currentSubtitleText = "" }
-            return
-        }
-        // 条目按开始时间排序，做一次线性扫描（0.5 秒一跳，量级足够）
-        var found = ""
-        for cue in externalCues {
+        let primary = Self.cueText(in: externalCues, at: seconds)
+        if primary != currentSubtitleText { currentSubtitleText = primary }
+        let secondary = Self.cueText(in: secondaryCues, at: seconds)
+        if secondary != currentSecondarySubtitleText { currentSecondarySubtitleText = secondary }
+    }
+
+    /// 条目按开始时间排序，做一次线性扫描（0.5 秒一跳，量级足够）
+    private static func cueText(in cues: [SubtitleCue], at seconds: Double) -> String {
+        guard !cues.isEmpty else { return "" }
+        for cue in cues {
             if seconds < cue.start { break }
-            if seconds >= cue.start && seconds < cue.end { found = cue.text; break }
+            if seconds >= cue.start && seconds < cue.end { return cue.text }
         }
-        if found != currentSubtitleText { currentSubtitleText = found }
+        return ""
     }
 }
