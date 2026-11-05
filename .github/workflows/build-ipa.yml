@@ -6,9 +6,9 @@ name: Build unsigned IPA
 # 发版规矩：每次发版必须先在 Lumen/Changelog.swift 最上方同步新增一条更新日志，
 # 否则不发版（App 内「设置 → 关于 → 更新日志」直接读那份数据）。
 #
-# SPM 缓存：key 用 Package.resolved 的哈希。工程暂未提交 Package.resolved 时
-# hashFiles 返回空、key 退化为前缀匹配（restore-keys 兜底）；首次成功构建后
-# 可把生成的 Package.resolved 提交进仓库，缓存即精确命中。
+# 注意：不要给 SPM 加 actions/cache 缓存。build #11 实测恢复的缓存让包产物
+# 路径错位（Products/Release 而非 Release-iphoneos），链接阶段找不到
+# _MPVKit.o／_FFmpeg.o；#10 无缓存时产物路径正常。宁可每次全量拉取。
 on:
   push:
     branches: [ main ]
@@ -24,16 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Swift packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/SourcePackages
-            build-sim/SourcePackages
-          key: spm-${{ runner.os }}-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            spm-${{ runner.os }}-
-
       - name: Generate app icon
         run: |
           pip3 install --break-system-packages --quiet pillow
@@ -46,6 +36,7 @@ jobs:
             -scheme Lumen \
             -configuration Release \
             -sdk iphoneos \
+            -destination "generic/platform=iOS" \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -68,6 +59,7 @@ jobs:
             -scheme Lumen \
             -configuration Debug \
             -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
             -derivedDataPath build-sim \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
