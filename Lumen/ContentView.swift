@@ -1470,10 +1470,10 @@ remuxProgress = nil
 warnings = result.warnings
 var options: [NativeSubtitleOption] = []
 if let external = externalOption(for: target) { options.append(external)}
-options += result.embeddedSubtitles.map { sub in
+options += result.embeddedSubtitles.enumerated().map { idx, sub in
 let track = MPVTrack(id: 0, type: "sub", lang: sub.lang, title: sub.title,
 codec: "subrip", isExternal: false)
-return NativeSubtitleOption(id: "emb-\(sub.streamIndex)",
+return NativeSubtitleOption(id: "emb-\(idx)",
 label: track.displayName,
 kindLabel: String(localized: "文本"),
 score: track.subtitleDefaultScore,
