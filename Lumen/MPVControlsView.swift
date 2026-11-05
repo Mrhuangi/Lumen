@@ -180,55 +180,107 @@ struct MPVControlsView: View {
     }
 
     // MARK: 底部控制条
+    //
+    // 宽度自适应（1.2.1 修复）：按钮全是固定 40pt 宽，单行全开最满约需 629pt，
+    // 远大于小屏竖屏的可用宽（375 − 32 面板边距 − 36 内边距 = 307pt）。
+    // 固定宽子视图不会收缩，HStack 只会把理想宽报给父级，整套 chrome 被撑出屏幕、
+    // 居中后两头一起裁（SE3 竖屏标题贴边、关闭按钮出界、面板两头按钮被切的同一根源）。
+    // 故按实测宽度分档：< 700pt 用双行紧凑排布（每行都留有余量），≥ 700pt 用单行
+    // （此时内容宽 ≥ 632pt，单行最满 629pt 恰好装得下）。
 
     private var bottomBar: some View {
-        VStack {
-            Spacer()
-            if let target = scrubValue {
-                scrubPreview(target)
-            }
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Text(Self.timeText(scrubValue ?? model.position))
-                        .frame(width: 52, alignment: .leading)
-                    progressWithChapters
-                    Text(Self.timeText(model.duration))
-                        .frame(width: 52, alignment: .trailing)
+        GeometryReader { geo in
+            VStack {
+                Spacer()
+                if let target = scrubValue {
+                    scrubPreview(target)
                 }
-                .font(.footnote.monospacedDigit())
-                .foregroundStyle(.white)
+                VStack(spacing: 10) {
+                    progressRow
+                    if geo.size.width < 700 {
+                        compactButtonRows
+                    } else {
+                        wideButtonRow
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
 
-                HStack(spacing: 8) {
-                    rateMenu
-                    if !model.chapters.isEmpty { chaptersMenu }
-                    Spacer(minLength: 4)
-                    if showSeekButtons {
-                        controlButton("gobackward.10", label: "快退 10 秒") { model.seekBy(-10) }
-                    }
-                    if showPrevNextButtons, let onPrevious {
-                        controlButton("backward.end.fill", label: "上一集") { onPrevious() }
-                    }
-                    playPauseButton
-                    if showPrevNextButtons, let onNext {
-                        controlButton("forward.end.fill", label: "下一集") { onNext() }
-                    }
-                    if showSeekButtons {
-                        controlButton("goforward.10", label: "快进 10 秒") { model.seekBy(10) }
-                    }
-                    Spacer(minLength: 4)
-                    controlButton("captions.bubble.fill", label: "字幕") { showSubtitlePanel = true }
-                    audioMenu
-                    if episodes.count > 1 {
-                        controlButton("list.bullet", label: "选集") { showEpisodes = true }
-                    }
-                    controlButton("ellipsis.circle", label: "更多设置") { showMoreSettings = true }
-                }
+    private var progressRow: some View {
+        HStack(spacing: 12) {
+            Text(Self.timeText(scrubValue ?? model.position))
+                .frame(width: 52, alignment: .leading)
+            progressWithChapters
+            Text(Self.timeText(model.duration))
+                .frame(width: 52, alignment: .trailing)
+        }
+        .font(.footnote.monospacedDigit())
+        .foregroundStyle(.white)
+    }
+
+    /// 宽屏单行（总宽 ≥ 700pt、内容宽 ≥ 632pt 时才走这里；固定宽最满约 629pt）
+    private var wideButtonRow: some View {
+        HStack(spacing: 8) {
+            rateMenu()
+            if !model.chapters.isEmpty { chaptersMenu }
+            Spacer(minLength: 4)
+            transportButtons
+            Spacer(minLength: 4)
+            controlButton("captions.bubble.fill", label: "字幕") { showSubtitlePanel = true }
+            audioMenu
+            if episodes.count > 1 {
+                controlButton("list.bullet", label: "选集") { showEpisodes = true }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            controlButton("ellipsis.circle", label: "更多设置") { showMoreSettings = true }
+        }
+    }
+
+    /// 窄屏双行：上行放功能键（倍速/章节靠左，字幕/音轨/选集/更多靠右），下行走带键居中。
+    /// 375pt 可用 307pt：上行最满约 294pt（倍速键在紧凑档去掉图标只留倍率数字）、
+    /// 下行最满约 236pt，均不溢出。
+    private var compactButtonRows: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                rateMenu(compact: true)
+                if !model.chapters.isEmpty { chaptersMenu }
+                Spacer(minLength: 4)
+                controlButton("captions.bubble.fill", label: "字幕") { showSubtitlePanel = true }
+                audioMenu
+                if episodes.count > 1 {
+                    controlButton("list.bullet", label: "选集") { showEpisodes = true }
+                }
+                controlButton("ellipsis.circle", label: "更多设置") { showMoreSettings = true }
+            }
+            HStack(spacing: 8) {
+                Spacer()
+                transportButtons
+                Spacer()
+            }
+        }
+    }
+
+    /// 走带键组（快退/快进与上/下集按设置开关出现，两档排布共用）
+    @ViewBuilder
+    private var transportButtons: some View {
+        if showSeekButtons {
+            controlButton("gobackward.10", label: "快退 10 秒") { model.seekBy(-10) }
+        }
+        if showPrevNextButtons, let onPrevious {
+            controlButton("backward.end.fill", label: "上一集") { onPrevious() }
+        }
+        playPauseButton
+        if showPrevNextButtons, let onNext {
+            controlButton("forward.end.fill", label: "下一集") { onNext() }
+        }
+        if showSeekButtons {
+            controlButton("goforward.10", label: "快进 10 秒") { model.seekBy(10) }
         }
     }
 
@@ -343,7 +395,8 @@ struct MPVControlsView: View {
             .accessibilityLabel(label)
     }
 
-    private var rateMenu: some View {
+    /// 倍速菜单；紧凑档（窄屏双行）去掉图标、收窄内边距，只保留倍率数字，省出约 27pt
+    private func rateMenu(compact: Bool = false) -> some View {
         Menu {
             ForEach(Self.rates, id: \.self) { value in
                 Button {
@@ -359,13 +412,15 @@ struct MPVControlsView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "speedometer")
-                    .font(.system(size: 15, weight: .medium))
+                if !compact {
+                    Image(systemName: "speedometer")
+                        .font(.system(size: 15, weight: .medium))
+                }
                 Text(Self.rateText(model.rate))
                     .font(.subheadline.monospacedDigit())
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, compact ? 8 : 12)
             .frame(height: 32)
             .glassEffect(.regular.interactive(), in: Capsule())
         }
