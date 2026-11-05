@@ -95,6 +95,7 @@ final class MPVMetalViewController: UIViewController {
         mpv_observe_property(mpv, 0, MPVProperty.pause, MPV_FORMAT_FLAG)
         mpv_observe_property(mpv, 0, MPVProperty.pausedForCache, MPV_FORMAT_FLAG)
         mpv_observe_property(mpv, 0, MPVProperty.trackList, MPV_FORMAT_NONE)
+        mpv_observe_property(mpv, 0, MPVProperty.chapterList, MPV_FORMAT_NONE)
         mpv_observe_property(mpv, 0, MPVProperty.videoParamsSigPeak, MPV_FORMAT_DOUBLE)
         mpv_set_wakeup_callback(mpv, mpvWakeupTrampoline,
                                 UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()))
@@ -188,9 +189,35 @@ final class MPVMetalViewController: UIViewController {
         }
     }
 
+    /// 副字幕轨（双字幕的第二条）：mpv 的 secondary-sid 与 sid 独立，可同时渲染
+    func setSecondarySubtitleTrack(_ id: Int?) {
+        guard mpv != nil else { return }
+        if let id {
+            setIntProperty("secondary-sid", Int64(id))
+        } else {
+            checkError(mpv_set_property_string(mpv, "secondary-sid", "no"), "secondary-sid=no")
+        }
+    }
+
+    /// 字幕字号（mpv 的 sub-font-size，运行时可改，立即生效）
+    func setSubtitleFontSize(_ size: Int) {
+        setIntProperty("sub-font-size", Int64(size))
+    }
+
     func addExternalSubtitle(_ url: URL) {
         // select：外挂字幕一旦挂上就直接启用（用户长按添加字幕即为明确意图）
         command("sub-add", args: [url.path, "select"])
+    }
+
+    /// 读取容器章节列表（标题可缺失）；没有章节返回空数组
+    func readChapters() -> [(title: String?, time: Double)] {
+        guard mpv != nil else { return [] }
+        let count = Int(getInt("chapter-list/count"))
+        guard count > 0 else { return [] }
+        return (0..<count).map { i in
+            (title: getString("chapter-list/\(i)/title"),
+             time: getDouble("chapter-list/\(i)/time"))
+        }
     }
 
     // MARK: - 属性读取
