@@ -15,6 +15,11 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.2.1", date: "2026-11-05", items: [
+            Item(category: "修复", text: "续播过的视频再次打开时黑屏、进度归零，现已修复：重播会从上次看到的位置继续"),
+            Item(category: "修复", text: "小屏机型上播放界面两侧按钮被屏幕边缘裁切，现已修复：标题、关闭按钮与底部按钮完整显示"),
+            Item(category: "修复", text: "视频无法打开时没有任何提示，现会明确显示「无法播放这个文件」"),
+        ]),
         Entry(version: "1.2", date: "2026-11-05", items: [
             Item(category: "新增", text: "打开即播：点开视频直接播放，不再先等待重封装；重封装保留为「原生模式」，可在播放器更多设置里手动开启"),
             Item(category: "修复", text: "播放控件（包括关闭按钮）常驻不隐藏：现已统一显隐，播放中 3.5 秒无操作自动隐藏，点按画面唤出，暂停时保持显示"),
