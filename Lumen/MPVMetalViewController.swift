@@ -24,10 +24,14 @@ final class MPVMetalViewController: UIViewController {
     let metalLayer = MetalLayer()
     private(set) var mpv: OpaquePointer!
     var playDelegate: MPVPlayerDelegate?
+    /// 初始化级失败（mpv_create / mpv_initialize）的上报通道：模型据此点亮报错条，
+    /// 不再出现「黑屏 00:00 且无任何提示」（S4）
+    var onInitFailed: ((String) -> Void)?
 
     private lazy var queue = DispatchQueue(label: "lumen.mpv.events", qos: .userInitiated)
     private var pendingLoad: URL?
     private var wasPlayingBeforeBackground = false
+    private var eventsStopped = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,10 +66,12 @@ final class MPVMetalViewController: UIViewController {
 
     // MARK: - mpv 初始化
 
-    private func setupMpv() {
+    @discardableResult
+    private func setupMpv() -> Bool {
         guard let created = mpv_create() else {
             AppLog.add("播放", "mpv 初始化失败：mpv_create 返回空")
-            return
+            onInitFailed?(String(localized: "播放引擎初始化失败"))
+            return false
         }
         mpv = created
 
@@ -88,7 +94,36 @@ final class MPVMetalViewController: UIViewController {
         setOption("subs-fallback", "yes")
         // 注意：不要设置 target-peak（整型选项传浮点字符串会被静默拒绝并压暗画面）
 
-        checkError(mpv_initialize(mpv), "mpv_initialize")
+        // 字幕字体（1.3）：iOS 上 libass 的 CoreText 回退拿到的中文字体在私有框架里、
+        // 沙盒读不到，中文字幕会全灭成方框（详见 research_notes/lumen-v1.3-research/subtitle-font.md）。
+        // 解法是随包字体三件叠加，全部在 initialize 前设好：
+        // config-dir 落沙盒受控目录（其 fonts/ 是 libass 默认字体库，subfont.ttf 是无条件兜底），
+        // sub-fonts-dir 直指包内目录，sub-font 写字体内部 family 名（不是文件名）。
+        SubtitleFontInstaller.ensureSubfontFallback()
+        SubtitleFontInstaller.installAllInBackground()
+        setOption("config-dir", SubtitleFontInstaller.configDirectory.path)
+        if let bundleFonts = SubtitleFontInstaller.bundleFontsDirectory {
+            setOption("sub-fonts-dir", bundleFonts.path)
+            setOption("osd-fonts-dir", bundleFonts.path)
+        }
+        setOption("sub-font", "Noto Sans CJK SC")
+
+        // 解码性能与发热（1.3，据 performance.md 的 A/B 组）：
+        // allow-delayed-peak-detect 是纯赚项——省掉峰值检测引入的一整遍全屏 FBO 间接拷贝；
+        // 其余四项把 mpv 默认值显式写死，防升版漂移把省电基线带走。
+        // hwdec / vo / hdr-compute-peak 经调研维持现状，不动。
+        setOption("allow-delayed-peak-detect", "yes")
+        setOption("framedrop", "vo")
+        setOption("video-sync", "audio")
+        setOption("interpolation", "no")
+        setOption("deband", "no")
+
+        let initStatus = mpv_initialize(mpv)
+        guard initStatus >= 0 else {
+            checkError(initStatus, "mpv_initialize")
+            onInitFailed?(String(localized: "播放引擎初始化失败"))
+            return false
+        }
 
         mpv_observe_property(mpv, 0, MPVProperty.timePos, MPV_FORMAT_DOUBLE)
         mpv_observe_property(mpv, 0, MPVProperty.duration, MPV_FORMAT_DOUBLE)
@@ -99,6 +134,7 @@ final class MPVMetalViewController: UIViewController {
         mpv_observe_property(mpv, 0, MPVProperty.videoParamsSigPeak, MPV_FORMAT_DOUBLE)
         mpv_set_wakeup_callback(mpv, mpvWakeupTrampoline,
                                 UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()))
+        return true
     }
 
     private func setOption(_ name: String, _ value: String) {
@@ -106,9 +142,11 @@ final class MPVMetalViewController: UIViewController {
         checkError(mpv_set_option_string(mpv, name, value), "set \(name)=\(value)")
     }
 
-    /// 销毁 mpv 实例（Representable 拆卸时调用）：先摘回调再 terminate，避免事件排空时访问已释放对象
+    /// 销毁 mpv 实例（Representable 拆卸时调用）：先在事件队列上置停止标志并排空，
+    /// 再摘回调、terminate，避免事件排空与销毁并发造成 use-after-free（M11）
     func teardownPlayer() {
         guard mpv != nil else { return }
+        queue.sync { eventsStopped = true }
         mpv_set_wakeup_callback(mpv, nil, nil)
         mpv_terminate_destroy(mpv)
         mpv = nil
@@ -127,13 +165,14 @@ final class MPVMetalViewController: UIViewController {
         guard mpv != nil else { return }
         wasPlayingBeforeBackground = !getFlag(MPVProperty.pause)
         pause()
-        // 进后台关掉视频输出，避免 Metal 命令缓冲被系统拒绝
-        checkError(mpv_set_option_string(mpv, "vid", "no"), "vid=no")
+        // 进后台关掉视频输出，避免 Metal 命令缓冲被系统拒绝。
+        // vid 在 initialize 后必须走属性 API，选项 API 会被引擎拒绝（M10）
+        checkError(mpv_set_property_string(mpv, "vid", "no"), "vid=no")
     }
 
     @objc private func enterForeground() {
         guard mpv != nil else { return }
-        checkError(mpv_set_option_string(mpv, "vid", "auto"), "vid=auto")
+        checkError(mpv_set_property_string(mpv, "vid", "auto"), "vid=auto")
         if wasPlayingBeforeBackground { play() }
     }
 
@@ -155,11 +194,20 @@ final class MPVMetalViewController: UIViewController {
         let status = command("loadfile", args: [target, "replace"])
         if status < 0 {
             let message = String(cString: mpv_error_string(status))
-            AppLog.add("播放", "直读加载失败（loadfile 返回 \(message)），目标：\(target)")
+            AppLog.add("播放", "直读加载失败（loadfile 返回 \(message)），目标：\(Self.sanitizedTarget(url))")
             forwardToDelegate { delegate, handle in
                 delegate.mpvLoadFailed(mpv: handle, error: message)
             }
         }
+    }
+
+    /// 日志用的脱敏目标（L4）：本地文件只记文件名，直链只记 scheme＋host＋末段，
+    /// 不把完整路径或带签名参数的完整 URL 落进可外发的日志
+    private static func sanitizedTarget(_ url: URL) -> String {
+        if url.isFileURL { return url.lastPathComponent }
+        let scheme = url.scheme ?? "http"
+        let host = url.host ?? ""
+        return "\(scheme)://\(host)/…/\(url.lastPathComponent)"
     }
 
     func stopPlayback() {
@@ -288,11 +336,30 @@ final class MPVMetalViewController: UIViewController {
                 lang: getString("\(prefix)/lang"),
                 title: getString("\(prefix)/title"),
                 codec: getString("\(prefix)/codec"),
+                codecProfile: getString("\(prefix)/codec-profile"),
+                channelCount: Int(getInt("\(prefix)/demux-channel-count")),
+                ffIndex: Int(getInt("\(prefix)/ff-index")),
                 isExternal: getFlag("\(prefix)/external"),
-                isSelected: getFlag("\(prefix)/selected")
+                isSelected: getFlag("\(prefix)/selected"),
+                isForced: getFlag("\(prefix)/forced"),
+                isDefault: getFlag("\(prefix)/default"),
+                isHearingImpaired: getFlag("\(prefix)/hearing-impaired")
             ))
         }
         return tracks
+    }
+
+    /// 整数属性读取（供模型读旋转元数据等）
+    func getIntValue(_ name: String) -> Int64 { getInt(name) }
+
+    /// 视频实际显示宽高：width/height 是编码尺寸，竖拍视频带 rotate 元数据时要互换，
+    /// 否则横竖判定会反（审查补充：原生路用 preferredTransform 是对的，直读路此前没处理）
+    func videoDisplaySize() -> (width: Double, height: Double) {
+        let w = getDouble(MPVProperty.width)
+        let h = getDouble(MPVProperty.height)
+        let rotate = getInt("video-params/rotate")
+        if rotate == 90 || rotate == 270 { return (h, w) }
+        return (w, h)
     }
 
     // MARK: - 命令
@@ -330,7 +397,7 @@ final class MPVMetalViewController: UIViewController {
     }
 
     private func readEvents() {
-        while mpv != nil {
+        while !eventsStopped, mpv != nil {
             let event = mpv_wait_event(mpv, 0)
             guard let event else { break }
             if event.pointee.event_id == MPV_EVENT_NONE { break }
@@ -400,6 +467,92 @@ struct MPVTrackInfo {
     var lang: String?
     var title: String?
     var codec: String?
+    /// 编码 profile 原文（如 "Dolby Digital Plus + Dolby Atmos"）；只有该轨已被解码后才有值
+    var codecProfile: String?
+    /// 容器声道数（demux-channel-count，不一定准，仅作标注参考）
+    var channelCount: Int
+    /// lavf 流索引（非 lavf demuxer 时可能不准，供 FFmpeg probe 对位时二次校验）
+    var ffIndex: Int
     var isExternal: Bool
     var isSelected: Bool
+    var isForced: Bool
+    var isDefault: Bool
+    var isHearingImpaired: Bool
+}
+
+// MARK: - 字幕字体安装（随包 Noto Sans CJK SC，全字重）
+
+/// libass 在 iOS 上靠 CoreText 回退拿字体名、再用 FreeType 打开字体文件本体；
+/// 中文回退字体 PingFang 只在 PrivateFrameworks 里，沙盒 App 打不开，中文字幕必然全灭成方框。
+/// 已验证的解法是随包带完整字体并装进 mpv 的 config-dir 体系（见 subtitle-font.md）：
+/// fonts/ 是 libass 的默认字体库目录，根下的 subfont.ttf 是 libass 无条件兜底，
+/// 另由 setupMpv 显式设 sub-fonts-dir（包内目录）＋ sub-font（family 名）双保险。
+enum SubtitleFontInstaller {
+    /// mpv 的 config-dir：App 沙盒内受控目录（Application Support/LumenMPV）
+    static var configDirectory: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("LumenMPV", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// 包内字体目录（工程 SubtitleFonts 文件夹引用，内含全字重 OTF 与 OFL.txt）
+    static var bundleFontsDirectory: URL? {
+        Bundle.main.url(forResource: "SubtitleFonts", withExtension: nil)
+    }
+
+    private static let installLock = NSLock()
+    private static var installStarted = false
+
+    /// 全量安装走后台（7 份 OTF 约 115MB 的拷贝不压主线程）；App 启动时与播放器初始化时都会触发，只跑一次
+    static func installAllInBackground() {
+        installLock.lock()
+        guard !installStarted else { installLock.unlock(); return }
+        installStarted = true
+        installLock.unlock()
+        DispatchQueue.global(qos: .utility).async { installAll() }
+    }
+
+    static func installAll() {
+        guard let bundleDir = bundleFontsDirectory else {
+            AppLog.add("播放", "字幕字体：包内 SubtitleFonts 目录缺失，无法安装")
+            return
+        }
+        let fm = FileManager.default
+        let fontsDir = configDirectory.appendingPathComponent("fonts", isDirectory: true)
+        try? fm.createDirectory(at: fontsDir, withIntermediateDirectories: true)
+        let names = (try? fm.contentsOfDirectory(atPath: bundleDir.path)) ?? []
+        var copied = 0
+        for name in names where name.hasSuffix(".otf") {
+            if copyIfNeeded(from: bundleDir.appendingPathComponent(name),
+                            to: fontsDir.appendingPathComponent(name)) {
+                copied += 1
+            }
+        }
+        ensureSubfontFallback()
+        AppLog.add("播放", "字幕字体安装完成：config-dir=\(configDirectory.path)，本次复制 \(copied) 份，sub-fonts-dir=\(bundleDir.path)")
+    }
+
+    /// initialize 前的最小同步兜底：只保证 subfont.ttf 在位（单份拷贝，很快），全量安装随后台完成
+    static func ensureSubfontFallback() {
+        guard let bundleDir = bundleFontsDirectory else { return }
+        let src = bundleDir.appendingPathComponent("NotoSansCJKsc-Regular.otf")
+        let dst = configDirectory.appendingPathComponent("subfont.ttf")
+        _ = copyIfNeeded(from: src, to: dst)
+    }
+
+    @discardableResult
+    private static func copyIfNeeded(from src: URL, to dst: URL) -> Bool {
+        let fm = FileManager.default
+        let srcSize = (try? src.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
+        let dstSize = (try? dst.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
+        if let srcSize, srcSize == dstSize, fm.fileExists(atPath: dst.path) { return false }
+        try? fm.removeItem(at: dst)
+        do {
+            try fm.copyItem(at: src, to: dst)
+            return true
+        } catch {
+            return false
+        }
+    }
 }
