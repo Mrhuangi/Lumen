@@ -3944,6 +3944,40 @@
           }
         }
       }
+    },
+    "共 1 季": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Season"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 1 季"
+          }
+        }
+      }
+    },
+    "共 1 集": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Episode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 1 集"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
