@@ -24,6 +24,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch subtitle fonts (Noto Sans CJK SC, SIL OFL 1.1)
+        run: |
+          set -euo pipefail
+          mkdir -p Lumen/SubtitleFonts
+          BASE="https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/OTF/SimplifiedChinese"
+          cd Lumen/SubtitleFonts
+          for f in NotoSansCJKsc-Thin.otf NotoSansCJKsc-Light.otf NotoSansCJKsc-Regular.otf NotoSansCJKsc-DemiLight.otf NotoSansCJKsc-Medium.otf NotoSansCJKsc-Bold.otf NotoSansCJKsc-Black.otf; do
+            curl -fL --retry 3 -o "$f" "$BASE/$f"
+          done
+          curl -fL --retry 3 -o OFL.txt "https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/LICENSE"
+          cat > fonts.sha256 <<'EOF'
+          89bb8179d1b285ac0ca236b37ff29929ee3cc4526048dc11630a55728063e5ba  NotoSansCJKsc-Thin.otf
+          e78bbbe1573bbb006156c1198f5c8cd6329470cb6e0b6702c7a3c83913db4abf  NotoSansCJKsc-Light.otf
+          2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b  NotoSansCJKsc-Regular.otf
+          4600700d1b10c8e82074de7c91fa60d2ff5d0a7b9588edea6ab0929424b1699f  NotoSansCJKsc-DemiLight.otf
+          ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7  NotoSansCJKsc-Medium.otf
+          b5f0d1a190a7f9b43c310a8850630af12553df32c4c050543f9059732d9b4c0a  NotoSansCJKsc-Bold.otf
+          2267c4a0312d267dff8c0d1609948f7d949a3da8be3e126f5e2690cb9cc883b4  NotoSansCJKsc-Black.otf
+          6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2  OFL.txt
+          EOF
+          shasum -a 256 -c fonts.sha256
+          rm fonts.sha256
+          ls -lh
+
       - name: Generate app icon
         run: |
           pip3 install --break-system-packages --quiet pillow
