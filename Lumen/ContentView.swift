@@ -14,6 +14,14 @@ enum DocumentPickerBridge {
                               completion: @escaping ([URL]?) -> Void) {
         // 稍等一拍，让触发它的菜单先完成关闭动画，避免呈现上下文被拆掉
         DispatchQueue.main.async {
+            // 单槽协调者（M9）：新呈现前先把还挂着的旧请求按「取消」结算并记日志。
+            // 旧 completion 被 activeCoordinator 强引用着，一旦被新请求覆盖就永不回调——
+            // 菜单连点时导入假死正出在这里
+            if let stale = activeCoordinator {
+                AppLog.add("选择器", "上一个选择请求未结算，已先按取消处理")
+                activeCoordinator = nil
+                stale.settle(with: nil)
+            }
             guard let presenter = topPresenter() else {
                 AppLog.add("选择器", "打不开：找不到可呈现的界面")
                 completion(nil)
@@ -39,17 +47,25 @@ enum DocumentPickerBridge {
 
     private final class Coordinator: NSObject, UIDocumentPickerDelegate {
         private let completion: ([URL]?) -> Void
+        private var settled = false
         init(completion: @escaping ([URL]?) -> Void) { self.completion = completion }
+
+        /// 只结算一次：被新请求顶替时由桥以 nil 结算，之后选择器自身的回调不再重复触发
+        func settle(with urls: [URL]?) {
+            guard !settled else { return }
+            settled = true
+            completion(urls)
+        }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             AppLog.add("选择器", "已选择 \(urls.count) 项")
-            completion(urls)
+            settle(with: urls)
             DocumentPickerBridge.activeCoordinator = nil
         }
 
         func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
             AppLog.add("选择器", "用户取消选择")
-            completion(nil)
+            settle(with: nil)
             DocumentPickerBridge.activeCoordinator = nil
         }
     }
@@ -276,8 +292,8 @@ struct LibraryView: View {
         .onChange(of: store.items.count) { _, _ in
             scrape.ensureAll(items: store.items)
         }
-        .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store, scrape: scrape)
+        .playerCover(item: $activeItem) { item, context in
+            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
         }
     }
 
@@ -288,6 +304,8 @@ struct LibraryView: View {
             guard let urls, !urls.isEmpty else { return }
             AppLog.add("导入", "选择器返回 \(urls.count) 个文件")
             urls.forEach(store.addFile)
+            // 导入失败要真正弹错（M7）：store 记录了失败原因，视图层一直没人接
+            if let error = store.lastImportError { importError = error }
         }
     }
 
@@ -295,7 +313,11 @@ struct LibraryView: View {
         DocumentPickerBridge.presentPicker(contentTypes: [.folder], allowsMultiple: false) { urls in
             guard let folder = urls?.first else { return }
             let r = store.addSource(url: folder)
-            scanSummary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。之后每次打开 App 都会自动扫描。")
+            if let error = store.lastImportError {
+                importError = error
+            } else {
+                scanSummary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。之后每次打开 App 都会自动扫描。")
+            }
         }
     }
 
@@ -708,8 +730,8 @@ struct SeriesView: View {
         }
         .navigationTitle(show)
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store, scrape: scrape)
+        .playerCover(item: $activeItem) { item, context in
+            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
         }
         .task { scrape.ensureAll(items: store.items) }
     }
@@ -991,8 +1013,8 @@ struct SearchView: View {
             .navigationTitle("搜索")
         }
         .searchable(text: $query, prompt: "搜索片名")
-        .fullScreenCover(item: $activeItem) { item in
-            PlaybackFlow(item: item, store: store, scrape: scrape)
+        .playerCover(item: $activeItem) { item, context in
+            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
         }
     }
 }
@@ -1087,6 +1109,7 @@ struct SourcesView: View {
             guard let urls, !urls.isEmpty else { return }
             AppLog.add("导入", "选择器返回 \(urls.count) 个文件")
             urls.forEach(store.addFile)
+            if let error = store.lastImportError { importError = error }
         }
     }
 
@@ -1094,7 +1117,11 @@ struct SourcesView: View {
         DocumentPickerBridge.presentPicker(contentTypes: [.folder], allowsMultiple: false) { urls in
             guard let folder = urls?.first else { return }
             let r = store.addSource(url: folder)
-            summary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。")
+            if let error = store.lastImportError {
+                importError = error
+            } else {
+                summary = String(localized: "已添加文件源「\(folder.lastPathComponent)」：共找到 \(r.found) 个视频，新加入媒体库 \(r.added) 个。")
+            }
         }
     }
 
@@ -1160,7 +1187,7 @@ struct SettingsView: View {
                     Toggle("上一集 / 下一集按钮", isOn: $showPrevNextButtons)
                     Toggle("快退 / 快进按钮", isOn: $showSeekButtons)
                     Stepper(value: $subFontSize, in: 13...26, step: 1) {
-                        LabeledContent("外挂字幕字号", value: "\(Int(subFontSize))")
+                        LabeledContent("字幕字号（原生模式）", value: "\(Int(subFontSize))")
                     }
                     Stepper(value: $mpvSubtitleFontSize, in: 36...80, step: 1) {
                         LabeledContent("字幕字号（直读）", value: "\(mpvSubtitleFontSize)")
@@ -1282,6 +1309,8 @@ struct PlaybackFlow: View {
 let item: MediaItem
 @ObservedObject var store: LibraryStore
 var scrape: ScrapeStore? = nil
+/// 呈现控制器的方向上下文（由 playerCover 注入）：模型判定写进来，呈现即按它定向
+var orientationContext: PlaybackOrientationContext? = nil
 @StateObject private var avModel = PlayerModel()
 @StateObject private var mpvModel = MPVPlayerModel()
 @Environment(\.dismiss) private var dismiss
@@ -1299,16 +1328,43 @@ var scrape: ScrapeStore? = nil
 @State private var notice: String?
 @State private var remuxer: FFmpegRemuxer?
 
-init(item: MediaItem, store: LibraryStore, scrape: ScrapeStore? = nil) {
+init(item: MediaItem, store: LibraryStore, scrape: ScrapeStore? = nil,
+orientationContext: PlaybackOrientationContext? = nil) {
 self.item = item
 self.store = store
 self.scrape = scrape
+self.orientationContext = orientationContext
 _currentItem = State(initialValue: item)
 }
 
 private var episodes: [MediaItem] { store.episodesInSeries(of: currentItem)}
 private var preferenceScope: String {
-EpisodeParser.parse(currentItem.name)?.show ?? currentItem.name
+// 记忆归属：文件源内的相对目录名优先（合集盘里多部剧同目录时，文件名解析的剧名会串），
+// 其次文件名解析的剧名，最后片名本身（B7）
+if let rel = currentItem.relativePath {
+let dir = (rel as NSString).deletingLastPathComponent
+if !dir.isEmpty, dir != "." {
+return (dir as NSString).lastPathComponent
+}
+}
+return EpisodeParser.parse(currentItem.name)?.show ?? currentItem.name
+}
+/// 播放页标题：有刮削时用「剧名 SxxExx · 分集名」，否则退回清洗后的文件名
+/// （去掉扩展名与发布组惯用的点分隔），不再把原始文件名直接摆给用户
+private var displayTitle: String {
+if let info = EpisodeParser.parse(currentItem.name),
+   let meta = scrape?.meta(for: info.show) {
+let key = ScrapeStore.episodeKey(season: info.season, episode: info.episode)
+let base = "\(meta.title) \(key)"
+if let episodeTitle = meta.episodes[key]?.title, !episodeTitle.isEmpty {
+return "\(base) · \(episodeTitle)"
+}
+return base
+}
+return currentItem.name
+.replacingOccurrences(of: ".", with: " ")
+.replacingOccurrences(of: "_", with: " ")
+.trimmingCharacters(in: .whitespaces)
 }
 private var hasPrevious: Bool { store.previousInSeries(before: currentItem) != nil}
 private var hasNext: Bool { store.nextInSeries(after: currentItem) != nil}
@@ -1317,11 +1373,12 @@ var body: some View {
 ZStack {
 Color.black.ignoresSafeArea()
 if let engine {
-PlayerScreen(engine: engine, title: currentItem.name,
+PlayerScreen(engine: engine, title: displayTitle,
 nativeSubtitleOptions: nativeOptions,
 externalSubtitleURL: externalSubURL,
 resumeKey: currentItem.id.uuidString,
 preferenceScope: preferenceScope,
+orientationContext: orientationContext,
 notice: notice,
 subtitleOptionsToken: subtitleOptionsToken,
 episodes: episodes,
@@ -1363,7 +1420,7 @@ OrientationHelper.unlockForPlayback()
 remuxer?.cancel()
 avModel.stop()
 mpvModel.stop()
-store.stopAccessing()
+store.stopAccessing(for: currentItem)
 store.refreshProgress()
 OrientationHelper.lockToPortrait()
 }
@@ -1582,6 +1639,8 @@ var subtitleOptionsToken: Int = 0
 var episodes: [MediaItem] = []
 var currentEpisodeID: UUID
 var stillProvider: (MediaItem) -> UIImage? = { _ in nil}
+/// 呈现控制器的方向上下文：判定到达时同步写一份，呈现层与请求层双保险
+var orientationContext: PlaybackOrientationContext? = nil
 @ObservedObject var avModel: PlayerModel
 @ObservedObject var mpvModel: MPVPlayerModel
 let onClose: () -> Void
@@ -1666,16 +1725,23 @@ if paused { controlsVisible = true}
 .onChange(of: subtitleOptionsToken) { _, _ in applySubtitleDefaults()}
 .onChange(of: selectedPrimaryOptionID) { _, _ in applyAVSubtitles()}
 .onChange(of: selectedSecondaryOptionID) { _, _ in applyAVSubtitles()}
-.onChange(of: avModel.videoIsLandscape) { _, isLandscape in
-// 横屏视频自动转横屏全屏；竖屏视频不硬转（沿用既定方向策略）
-if isLandscape == true {
-OrientationHelper.requestLandscape()
+.onChange(of: avModel.videoIsLandscape, initial: true) { _, isLandscape in
+// 电平触发（含初始值）：判定在页面出现之前就已置位时，边沿触发永远等不到变化——
+// 1.2.1「点开 16:9 不自动横屏」的根因之一。写上下文给呈现控制器，再发 geometry 请求补位
+guard !isMPV else { return}
+orientationContext?.aspectLandscape = isLandscape
+OrientationHelper.setPlaybackAspect(isLandscape)
 }
+.onChange(of: mpvModel.videoIsLandscape, initial: true) { _, isLandscape in
+guard isMPV else { return}
+orientationContext?.aspectLandscape = isLandscape
+OrientationHelper.setPlaybackAspect(isLandscape)
 }
-.onChange(of: mpvModel.videoIsLandscape) { _, isLandscape in
-if isLandscape == true {
-OrientationHelper.requestLandscape()
-}
+.onAppear {
+// 页面（重新）出现时按当前判定再校正一次方向
+let current = isMPV ? mpvModel.videoIsLandscape : avModel.videoIsLandscape
+orientationContext?.aspectLandscape = current
+OrientationHelper.setPlaybackAspect(current)
 }
 .sheet(isPresented: $showAVSubtitlePanel) {
 AVSubtitlePanelView(options: nativeSubtitleOptions,
@@ -1755,11 +1821,22 @@ chromeButton("forward.end.fill", label: "下一集") { onNext()}
 if episodes.count > 1 {
 chromeButton("list.bullet", label: "选集") { showAVEpisodes = true}
 }
-if !nativeSubtitleOptions.isEmpty {
+// 字幕键常驻（M5）：选项要等重封装扫完才到，先灰着也要有入口，
+// 不再出现「播了半天找不到字幕按钮」
 chromeButton("captions.bubble.fill", label: "字幕") { showAVSubtitlePanel = true}
 }
+// 关闭键：裸 glyph＋44pt 点击域，与新控件层统一（渐变由控件层提供，父级不叠玻璃圆）
+Button {
+onClose()
+} label: {
+Image(systemName: "xmark")
+.font(.system(size: 15, weight:.semibold))
+.foregroundStyle(.white)
+.shadow(color:.black.opacity(0.55), radius: 4, y: 1)
+.frame(width: 44, height: 44)
+.contentShape(Rectangle())
 }
-chromeButton("xmark", label: "关闭") { onClose()}
+.accessibilityLabel("关闭")
 }
 if let currentNotice {
 chip(currentNotice)
