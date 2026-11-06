@@ -583,6 +583,7 @@ private final class SubtitleCueBuilder {
     let title: String
     let timeBase: AVRational
     private var cues: [SubtitleCue] = []
+    private var lastCueEnd: Double = 0
 
     init(codecID: AVCodecID, lang: String, title: String, timeBase: AVRational) {
         self.codecID = codecID
@@ -593,7 +594,7 @@ private final class SubtitleCueBuilder {
 
     func addPacket(_ packet: UnsafeMutablePointer<AVPacket>) {
         let pts = packet.pointee.pts
-        guard pts != Int64.max, let dataPtr = packet.pointee.data, packet.pointee.size > 0 else { return }
+        guard let dataPtr = packet.pointee.data, packet.pointee.size > 0 else { return }
         let data = Data(bytes: dataPtr, count: Int(packet.pointee.size))
         let raw = String(decoding: data, as: UTF8.self)
         let text: String
@@ -608,9 +609,14 @@ private final class SubtitleCueBuilder {
         }
         guard !text.isEmpty else { return }
         let scale = Double(timeBase.num) / Double(timeBase.den)
-        let start = Double(pts) * scale
+        // 无时间戳的包：AV_NOPTS_VALUE 是 Int64.min——旧代码判 Int64.max，对无 pts 包恒真放行，
+        // 会算出约 -9.2e15 的负时间 cue 污染整轨（S2）。改为退用上一条 cue 的结束时间作起点，
+        // 结束时间由 finish() 按下一条 cue 回填；duration 为负同样按 0 处理。
+        let start = pts == Int64.min ? lastCueEnd : Double(pts) * scale
         let duration = packet.pointee.duration > 0 ? Double(packet.pointee.duration) * scale : 0
-        cues.append(SubtitleCue(start: start, end: start + duration, text: text))
+        let cue = SubtitleCue(start: start, end: start + duration, text: text)
+        lastCueEnd = max(lastCueEnd, cue.end)
+        cues.append(cue)
     }
 
     func finish() -> FFmpegEmbeddedSubtitle {
@@ -636,5 +642,50 @@ private final class SubtitleCueBuilder {
             offset += length
         }
         return parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - 音轨全景声旁路探测（demux 层只读 probe，不解码）
+
+/// mpv 的 track-list codec-profile 只有轨道被解码后才有值，未选中轨永远读不到，
+/// 音轨菜单无法全量标注。用 Libavformat 在 demux 层读每条音频流的 codecpar.profile
+/// （find_stream_info 后即可），判据与重封装线一致：eac3 / truehd 且 profile == 30
+/// 即源轨带全景声数据（FFmpeg 的 AV_PROFILE_EAC3_DDP_ATMOS 与 TRUEHD_ATMOS 同为 30）。
+enum FFmpegAudioProbe {
+    struct AudioStreamInfo {
+        /// lavf 流索引，与 mpv track-list 的 ff-index 同源
+        var streamIndex: Int
+        /// 编码名（avcodec descriptor 名，如 "eac3" / "truehd"）
+        var codecName: String
+        /// codecpar.profile 数值
+        var profile: Int
+        var isAtmos: Bool {
+            profile == 30 && (codecName == "eac3" || codecName == "truehd")
+        }
+    }
+
+    /// 打开文件读全部音频流信息；打不开或无音频流返回空数组。
+    /// 同步执行，调用方须放在后台线程（查表型快速 IO）。
+    static func audioStreams(for url: URL) -> [AudioStreamInfo] {
+        var ctx: UnsafeMutablePointer<AVFormatContext>?
+        guard avformat_open_input(&ctx, url.path, nil, nil) >= 0, let fmt = ctx else { return [] }
+        defer { avformat_close_input(&ctx) }
+        guard avformat_find_stream_info(fmt, nil) >= 0 else { return [] }
+        var result: [AudioStreamInfo] = []
+        for i in 0..<Int(fmt.pointee.nb_streams) {
+            guard let stream = fmt.pointee.streams.advanced(by: i).pointee,
+                  let par = stream.pointee.codecpar,
+                  par.pointee.codec_type.rawValue == 1 else { continue }
+            let name: String
+            if let desc = avcodec_descriptor_get(par.pointee.codec_id), let namePtr = desc.pointee.name {
+                name = String(cString: namePtr)
+            } else {
+                name = ""
+            }
+            result.append(AudioStreamInfo(streamIndex: i,
+                                          codecName: name,
+                                          profile: Int(par.pointee.profile)))
+        }
+        return result
     }
 }
