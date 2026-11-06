@@ -972,6 +972,23 @@ private enum SubtitleTrackPresentation {
     }
 }
 
+// MARK: - 面板 detent 规则（横屏限高）
+
+/// sheet 面板的高度规则（1.4）：横屏（竖向尺寸类 compact，即窗口矮）只给 .fraction(0.62) 一档，
+/// 不给 .large——横屏下 .large 等于全屏高，面板会把画面整个挡住且内容被纵向拉散（1.3 真机实证）；
+/// 竖屏沿用各面板原规则：集合 [.medium, .large]，默认档由各面板按内容量决定。
+private enum PanelDetentRule {
+    static let landscapeDetent: PresentationDetent = .fraction(0.62)
+
+    static func detents(isLandscape: Bool) -> Set<PresentationDetent> {
+        isLandscape ? [landscapeDetent] : [.medium, .large]
+    }
+
+    static func resolvedDefault(isLandscape: Bool, portraitDefault: PresentationDetent) -> PresentationDetent {
+        isLandscape ? landscapeDetent : portraitDefault
+    }
+}
+
 // MARK: - 字幕面板（主/副双字幕：分组全列表＋摘要头＋加载本地字幕＋字号）
 
 struct SubtitlePanelView: View {
@@ -981,8 +998,16 @@ struct SubtitlePanelView: View {
     @AppStorage(PlayerSettings.mpvSubtitleFontSizeKey) private var fontSize: Int = 55
     @State private var tab: Tab = .primary
     @State private var detent: PresentationDetent = .medium
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private enum Tab { case primary, secondary }
+
+    /// 横屏判定：竖向尺寸类 compact 即窗口矮（iPhone 横屏），此时面板必须限高
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 竖屏默认档原规则：字幕轨超过 10 条默认 .large，否则 .medium
+    private var portraitDefaultDetent: PresentationDetent {
+        model.subtitleTracks.count > 10 ? .large : .medium
+    }
 
     var body: some View {
         NavigationStack {
@@ -999,9 +1024,14 @@ struct SubtitlePanelView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDetents(PanelDetentRule.detents(isLandscape: isLandscape), selection: $detent)
         .onAppear {
-            detent = model.subtitleTracks.count > 10 ? .large : .medium
+            detent = PanelDetentRule.resolvedDefault(isLandscape: isLandscape,
+                                                     portraitDefault: portraitDefaultDetent)
+        }
+        .onChange(of: isLandscape) { _, landscape in
+            detent = PanelDetentRule.resolvedDefault(isLandscape: landscape,
+                                                     portraitDefault: portraitDefaultDetent)
         }
     }
 
@@ -1207,6 +1237,10 @@ struct AudioPanelView: View {
     @ObservedObject var model: MPVPlayerModel
     @Environment(\.dismiss) private var dismiss
     @State private var detent: PresentationDetent = .large
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// 横屏判定与限高规则同字幕面板（见 PanelDetentRule）；竖屏默认档保持原规则 .large
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     var body: some View {
         NavigationStack {
@@ -1254,7 +1288,15 @@ struct AudioPanelView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDetents(PanelDetentRule.detents(isLandscape: isLandscape), selection: $detent)
+        .onAppear {
+            detent = PanelDetentRule.resolvedDefault(isLandscape: isLandscape,
+                                                     portraitDefault: .large)
+        }
+        .onChange(of: isLandscape) { _, landscape in
+            detent = PanelDetentRule.resolvedDefault(isLandscape: landscape,
+                                                     portraitDefault: .large)
+        }
     }
 }
 
@@ -1267,6 +1309,14 @@ struct EpisodePanelView: View {
     let onSelect: (MediaItem) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var detent: PresentationDetent = .medium
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// 横屏判定与限高规则同字幕面板（见 PanelDetentRule）
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 竖屏默认档原规则：集数超过 8 默认 .large，否则 .medium
+    private var portraitDefaultDetent: PresentationDetent {
+        episodes.count > 8 ? .large : .medium
+    }
 
     var body: some View {
         NavigationStack {
@@ -1317,9 +1367,14 @@ struct EpisodePanelView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDetents(PanelDetentRule.detents(isLandscape: isLandscape), selection: $detent)
         .onAppear {
-            detent = episodes.count > 8 ? .large : .medium
+            detent = PanelDetentRule.resolvedDefault(isLandscape: isLandscape,
+                                                     portraitDefault: portraitDefaultDetent)
+        }
+        .onChange(of: isLandscape) { _, landscape in
+            detent = PanelDetentRule.resolvedDefault(isLandscape: landscape,
+                                                     portraitDefault: portraitDefaultDetent)
         }
     }
 }
@@ -1328,6 +1383,10 @@ struct EpisodePanelView: View {
 
 struct PlayerMoreSettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// 横屏判定与限高规则同字幕面板（见 PanelDetentRule）
+    private var isLandscape: Bool { verticalSizeClass == .compact }
     @AppStorage(PlayerSettings.nativeModeKey) private var nativeMode = false
     @AppStorage(PlayerSettings.skipKey) private var skipIntroOutro = false
     @AppStorage(PlayerSettings.introSecondsKey) private var introSeconds: Double = 90
@@ -1376,6 +1435,6 @@ struct PlayerMoreSettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(PanelDetentRule.detents(isLandscape: isLandscape))
     }
 }
