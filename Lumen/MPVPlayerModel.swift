@@ -41,6 +41,7 @@ enum PlayerSettings {
 enum TrackPreferenceStore {
     private static let globalKey = "player.trackPrefs.global.v1"
     private static let perShowKey = "player.trackPrefs.show.v1"
+    private static let pairKey = "player.trackPrefs.pair.v1"
     /// 用户手动关闭字幕的记录值（区别于「没有记录」）
     static let offValue = "off"
 
@@ -64,6 +65,22 @@ enum TrackPreferenceStore {
         return global?[kind]
     }
 
+    /// 双字幕组合记忆（B3）：主＋副签名存进同一条记录，恢复时整对校验，
+    /// 不再让两条独立记录漂移拼出用户从未选过的组合
+    static func savePair(main: String, secondary: String, scope: String) {
+        var pairs = UserDefaults.standard.dictionary(forKey: pairKey) as? [String: String] ?? [:]
+        pairs[scope.isEmpty ? "*" : scope] = main + "\u{02}" + secondary
+        UserDefaults.standard.set(pairs, forKey: pairKey)
+    }
+
+    static func pair(scope: String) -> (main: String, secondary: String)? {
+        let pairs = UserDefaults.standard.dictionary(forKey: pairKey) as? [String: String] ?? [:]
+        guard let raw = pairs[scope.isEmpty ? "*" : scope] ?? pairs["*"] else { return nil }
+        let parts = raw.split(separator: "\u{02}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count == 2 else { return nil }
+        return (parts[0], parts[1])
+    }
+
     private static func defaults(kind key: String) -> [String: String] {
         UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
     }
@@ -78,27 +95,64 @@ struct MPVTrack: Identifiable, Equatable {
     let lang: String?
     let title: String?
     let codec: String?
+    /// 编码 profile 原文（mpv codec-profile）：只有该轨已被解码后才有值，未回填为 nil
+    var codecProfile: String?
+    /// 声道数（mpv demux-channel-count）
+    var channelCount: Int = 0
+    /// lavf 流索引（与 FFmpeg probe 对位用）
+    var ffIndex: Int = -1
     let isExternal: Bool
+    /// mpv track-list 的 forced 标记（强制字幕：招牌/提示类，B 线面板与默认选轨都用）
+    var isForced: Bool = false
+    /// mpv track-list 的 default 标记（容器标注的默认轨）
+    var isDefault: Bool = false
+    /// mpv track-list 的 hearing-impaired 标记（听障轨）
+    var isHearingImpaired: Bool = false
+    /// FFmpeg 旁路 probe 回填：源轨带全景声数据（仅音频轨，codecProfile 缺位时的 demux 层证据）
+    var probeAtmos: Bool = false
 
     /// 菜单显示名：语言译名优先，其次轨道标题，最后回退到轨道号
     var displayName: String {
         var parts: [String] = []
-        if let label = Self.languageLabel(lang) { parts.append(label) }
+        if let label = Self.languageLabel(lang, title: title) { parts.append(label) }
         if let title, !title.isEmpty, title != lang { parts.append(title) }
         if parts.isEmpty { parts.append(String(localized: "轨道 \(id)")) }
         if isExternal { parts.append(String(localized: "外挂")) }
         return parts.joined(separator: " · ")
     }
 
-    static func languageLabel(_ lang: String?) -> String? {
+    /// 语言译名。中文必须分简繁（菜单里两条都只写「中文」用户无法区分）：
+    /// 判定链——lang 的 BCP47（Hans 系 → 简体、Hant 系 → 繁体）→ 轨道标题关键词 → 回退「中文」
+    static func languageLabel(_ lang: String?, title: String? = nil) -> String? {
         guard let raw = lang?.lowercased(), !raw.isEmpty else { return nil }
         if raw.hasPrefix("zh") || raw.hasPrefix("cmn") || raw.hasPrefix("yue")
-            || raw == "chi" || raw == "zho" { return String(localized: "中文") }
+            || raw == "chi" || raw == "zho" {
+            return chineseVariantLabel(lang: raw, title: title)
+        }
         if raw.hasPrefix("ja") || raw == "jpn" { return String(localized: "日语") }
         if raw.hasPrefix("en") || raw == "eng" { return String(localized: "英语") }
         if raw.hasPrefix("ko") || raw == "kor" { return String(localized: "韩语") }
         if raw == "und" { return nil }
-        return raw.uppercased()
+        // 其余语言用系统本地化名称（如「法语」），认不出的再回退到大写代码
+        return Locale.current.localizedString(forLanguageCode: raw) ?? raw.uppercased()
+    }
+
+    private static func chineseVariantLabel(lang: String, title: String?) -> String {
+        if lang.contains("hans") || lang == "zh-cn" || lang == "zh-sg" {
+            return String(localized: "简体中文")
+        }
+        if lang.contains("hant") || lang == "zh-tw" || lang == "zh-hk" || lang == "zh-mo" {
+            return String(localized: "繁体中文")
+        }
+        if let t = title?.uppercased() {
+            if t.contains("CHS") || t.contains("简体") || t.contains("简中") || t.contains("SIMPLIFIED") {
+                return String(localized: "简体中文")
+            }
+            if t.contains("CHT") || t.contains("繁体") || t.contains("繁體") || t.contains("繁中") || t.contains("TRADITIONAL") {
+                return String(localized: "繁体中文")
+            }
+        }
+        return String(localized: "中文")
     }
 
     /// 是否中文轨（默认字幕选择策略，与系统播放器路径保持一致）
@@ -129,7 +183,8 @@ struct MPVTrack: Identifiable, Equatable {
     var isSimplifiedChinese: Bool {
         guard isChinese else { return false }
         let t = (title ?? "").uppercased()
-        if t.contains("简体") || t.contains("简中") || t.contains("CHS") { return true }
+        if t.contains("简体") || t.contains("简中") || t.contains("CHS") || t.contains("SIMPLIFIED")
+            || t.contains("[SC]") { return true }
         let l = (lang ?? "").lowercased()
         return l.contains("hans") || l == "zh-cn"
     }
@@ -137,13 +192,24 @@ struct MPVTrack: Identifiable, Equatable {
     var isTraditionalChinese: Bool {
         guard isChinese, !isSimplifiedChinese else { return false }
         let t = (title ?? "").uppercased()
-        if t.contains("繁体") || t.contains("繁中") || t.contains("CHT") || t.contains("BIG5") { return true }
+        if t.contains("繁体") || t.contains("繁體") || t.contains("繁中") || t.contains("CHT")
+            || t.contains("BIG5") || t.contains("TRADITIONAL") { return true }
         let l = (lang ?? "").lowercased()
         return l.contains("hant") || l == "zh-tw" || l == "zh-hk"
     }
 
-    /// 默认主字幕优先级分：简体中文 ＞ 未标明中文 ＞ 繁体中文 ＞ 英文 ＞ 其他（同分取首轨）
+    /// 特效/招牌/注释类轨道（只有招牌翻译、歌曲或制作注释，不是完整对白字幕）
+    var isEffectsOrCommentaryTrack: Bool {
+        let t = (title ?? "").lowercased()
+        return ["特效", "招牌", "signs", "注释", "commentary", "songs", "歌曲"].contains { t.contains($0) }
+    }
+
+    /// 默认主字幕优先级分：简体中文 ＞ 未标明中文 ＞ 繁体中文 ＞ 英文 ＞ 其他。
+    /// 1.3 规则：强制轨不进默认池（-100）；特效/注释轨降权（-50，只在别无选择时才可能被别处逻辑考虑）；
+    /// 最高分 ≤ 0 时调用方不自动选轨，宁可无字幕也不开错轨
     var subtitleDefaultScore: Int {
+        if isForced { return -100 }
+        if isEffectsOrCommentaryTrack { return -50 }
         if isSimplifiedChinese { return 50 }
         if isTraditionalChinese { return 40 }
         if isChinese { return 45 }
@@ -164,17 +230,34 @@ struct MPVTrack: Identifiable, Equatable {
 
     /// 字幕轨形态：文本（可渲染为文字）或图形（PGS/VobSub 等位图字幕）
     var subtitleIsText: Bool {
-        guard let codec, !codec.isEmpty else { return true }
-        switch codec.lowercased() {
-        case "subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text", "tx3g", "eia_608":
-            return true
-        default:
-            return false
+        if let codec, !codec.isEmpty {
+            switch codec.lowercased() {
+            case "subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text", "tx3g", "eia_608":
+                return true
+            default:
+                return false
+            }
         }
+        // codec 读不到时不再一律当文本：外挂 .sup 是位图字幕，标题带 .sup 的按图形处理
+        let t = (title ?? "").lowercased()
+        return !t.hasSuffix(".sup") && !t.contains(".sup ")
     }
 
     var subtitleKindLabel: String {
         String(localized: subtitleIsText ? "文本" : "图形")
+    }
+
+    /// 字幕格式标签（细化到具体格式，供字幕面板呈现）：ASS / SSA / SRT / VTT / PGS 等
+    var subtitleFormatLabel: String {
+        switch (codec ?? "").lowercased() {
+        case "ass": return "ASS"
+        case "ssa": return "SSA"
+        case "subrip", "srt": return "SRT"
+        case "webvtt": return "VTT"
+        case "hdmv_pgs_subtitle", "pgssub": return "PGS"
+        case "dvd_subtitle", "vobsub": return "VobSub"
+        default: return subtitleIsText ? String(localized: "文本") : String(localized: "图形")
+        }
     }
 
     /// 音轨编码的事实标注（元数据直读，不做品牌宣传加工）
@@ -195,16 +278,62 @@ struct MPVTrack: Identifiable, Equatable {
         }
     }
 
-    /// 轨道签名：跨文件/跨版本稳定地认出「同一条轨」，用于选择记忆
-    var signature: String {
-        [lang ?? "", title ?? "", codec ?? ""].joined(separator: "\u{01}")
+    /// 源轨带全景声数据：唯一可靠判据是 codec profile（选中轨解码后由 mpv 回填），
+    /// 未回填时用 FFmpeg probe 的 demux 层结果；codec 名、声道数、文件名、轨道标题都不是判据
+    var isAtmosAudio: Bool {
+        guard type == "audio" else { return false }
+        if let codecProfile, !codecProfile.isEmpty {
+            return codecProfile.lowercased().contains("atmos")
+        }
+        return probeAtmos
     }
 
-    /// 按签名找轨：先精确匹配，标题变化时退按语言＋编码匹配
+    /// DTS:X 同理以 profile 为准
+    var isDTSXAudio: Bool {
+        guard type == "audio" else { return false }
+        return codecProfile?.contains("DTS:X") ?? false
+    }
+
+    /// 音轨徽标：编码 · 声道 · 全景声，如「E-AC3 · 5.1 · Atmos」（音轨面板行直接用）
+    var codecBadgeLabel: String {
+        var parts: [String] = []
+        let base = codecLabel
+        if !base.isEmpty { parts.append(base) }
+        switch channelCount {
+        case 8: parts.append("7.1")
+        case 6: parts.append("5.1")
+        case 2: parts.append("2.0")
+        case 1: parts.append("1.0")
+        default: break
+        }
+        if isAtmosAudio {
+            parts.append("Atmos")
+        } else if isDTSXAudio {
+            parts.append("DTS:X")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// 轨道签名 v2：语言＋标题＋编码＋轨 id——同名同语言同编码的多条轨靠 id 区分，防撞车选错轨。
+    /// id 只在同一文件内稳定，跨集匹配时 match 会逐级放宽，不依赖它
+    var signature: String {
+        [lang ?? "", title ?? "", codec ?? "", String(id)].joined(separator: "\u{01}")
+    }
+
+    /// 按签名找轨：v2 精确 → 三段对位（语言＋标题＋编码，兼容 1.2.x 的旧三段签名）
+    /// → 语言＋标题 → 语言＋编码
     static func match(signature: String, in tracks: [MPVTrack]) -> MPVTrack? {
         if let exact = tracks.first(where: { $0.signature == signature }) { return exact }
         let parts = signature.split(separator: "\u{01}", omittingEmptySubsequences: false).map(String.init)
-        guard parts.count == 3, !parts[0].isEmpty else { return nil }
+        guard parts.count == 3 || parts.count == 4 else { return nil }
+        if let byTriple = tracks.first(where: {
+            ($0.lang ?? "") == parts[0] && ($0.title ?? "") == parts[1] && ($0.codec ?? "") == parts[2]
+        }) { return byTriple }
+        guard !parts[0].isEmpty else { return nil }
+        if !parts[1].isEmpty,
+           let byTitle = tracks.first(where: { ($0.lang ?? "") == parts[0] && ($0.title ?? "") == parts[1] }) {
+            return byTitle
+        }
         return tracks.first { ($0.lang ?? "") == parts[0] && ($0.codec ?? "") == parts[2] }
     }
 }
@@ -271,6 +400,16 @@ final class MPVPlayerModel: ObservableObject {
     private var lastSavedSecond = -1
     private var lastPublishedPosition = -1.0
     private var seekFlashCounter = 0
+    /// 控制器未 attach 时暂存的加载请求，attach 后补发（L7，不再静默丢 load）
+    private var pendingLoadURL: URL?
+    /// 轨道刷新合并去抖标记（A1）
+    private var trackRefreshScheduled = false
+    /// 选轨策略是否已在有轨道的情况下结算过（A6 晚到轨道补跑的闸门）
+    private var preferencesSettled = false
+    /// 用户本次播放是否手动动过轨道（动过就不再补跑自动选轨）
+    private var userTouchedTracks = false
+    /// 选中音轨的 codec-profile 是否已在解码开始后回读过（只做一次）
+    private var profileRefillDone = false
 
     init() {
         // mpv 不管理 iOS 音频会话，由 App 侧统一设置（与系统播放路径一致）
@@ -283,6 +422,13 @@ final class MPVPlayerModel: ObservableObject {
     func attach(_ vc: MPVMetalViewController) {
         controller = vc
         vc.playDelegate = self
+        vc.onInitFailed = { [weak self] message in
+            Task { @MainActor in self?.errorMessage = message }
+        }
+        if let pending = pendingLoadURL {
+            pendingLoadURL = nil
+            vc.loadFile(pending)
+        }
     }
 
     /// preferenceScope：轨道选择记忆的归属（剧名；单片传片名即可）
@@ -294,7 +440,8 @@ final class MPVPlayerModel: ObservableObject {
         currentURL = url
         errorMessage = nil
         videoIsLandscape = nil
-        isBuffering = false
+        // 加载即进入缓冲态，由 FILE_LOADED / 加载失败事件清掉，不留「静止的 00:00」（M3）
+        isBuffering = true
         position = 0
         duration = 0
         audioTracks = []
@@ -309,7 +456,16 @@ final class MPVPlayerModel: ObservableObject {
         outroFired = false
         lastSavedSecond = -1
         lastPublishedPosition = -1
+        trackRefreshScheduled = false
+        preferencesSettled = false
+        userTouchedTracks = false
+        profileRefillDone = false
         pendingExternalSubtitle = externalSubtitleURL
+
+        // 记忆倍速关着时，每次加载复位 1.0×（引擎侧在 handleFileLoaded 同步落地，B4）
+        if UserDefaults.standard.object(forKey: "settings.rememberRate") as? Bool == false {
+            rate = 1.0
+        }
 
         // 自动续播：与系统播放路径同一策略（设置关闭或不足片段尾部时不跳）。
         // 位置先记在本模型，文件加载完成（handleFileLoaded）后用 seek 落位：
@@ -319,12 +475,21 @@ final class MPVPlayerModel: ObservableObject {
             let saved = ResumeStore.position(forKey: resumeKey) ?? 0
             if saved > 3 { pendingResumePosition = saved }
         }
-        controller?.loadFile(url)
+        if let controller {
+            controller.loadFile(url)
+        } else {
+            // 控制器还没 attach：暂存，attach 时补发，不静默丢掉这次加载（L7）
+            pendingLoadURL = url
+            AppLog.add("播放", "播放控制器未就绪，加载已暂存")
+        }
     }
 
     func stop() {
         saveResume(force: true)
         controller?.stopPlayback()
+        // 方向/缓冲状态随停播复位：残留的横屏判定会让下一个竖屏视频被误推横屏
+        videoIsLandscape = nil
+        isBuffering = false
     }
 
     // MARK: - 控制（控制层调用）
@@ -353,13 +518,14 @@ final class MPVPlayerModel: ObservableObject {
         }
     }
 
-    func selectAudioTrack(_ id: Int) { selectAudio(id, record: true) }
-    func selectSubtitleTrack(_ id: Int?) { selectSubtitle(id, record: true) }
-    func selectSecondarySubtitleTrack(_ id: Int?) { selectSecondarySubtitle(id, record: true) }
+    func selectAudioTrack(_ id: Int) { userTouchedTracks = true; selectAudio(id, record: true) }
+    func selectSubtitleTrack(_ id: Int?) { userTouchedTracks = true; selectSubtitle(id, record: true) }
+    func selectSecondarySubtitleTrack(_ id: Int?) { userTouchedTracks = true; selectSecondarySubtitle(id, record: true) }
 
     private func selectAudio(_ id: Int, record: Bool) {
         selectedAudioID = id
         controller?.setAudioTrack(id)
+        profileRefillDone = false   // 切轨后，新选中轨的 codec-profile 要重新延后回读
         if record, let track = audioTracks.first(where: { $0.id == id }) {
             TrackPreferenceStore.save(kind: "audio", value: track.signature, scope: preferenceScope)
         }
@@ -375,6 +541,7 @@ final class MPVPlayerModel: ObservableObject {
                 TrackPreferenceStore.save(kind: "sub", value: TrackPreferenceStore.offValue,
                                           scope: preferenceScope)
             }
+            saveSubtitlePair()
         }
     }
 
@@ -388,7 +555,17 @@ final class MPVPlayerModel: ObservableObject {
                 TrackPreferenceStore.save(kind: "sub2", value: TrackPreferenceStore.offValue,
                                           scope: preferenceScope)
             }
+            saveSubtitlePair()
         }
+    }
+
+    /// 双字幕成对存档：主、副任一变化都把当下组合整对写入（B3）
+    private func saveSubtitlePair() {
+        let main = selectedSubtitleID.flatMap { id in subtitleTracks.first { $0.id == id }?.signature }
+            ?? TrackPreferenceStore.offValue
+        let secondary = selectedSecondarySubtitleID.flatMap { id in subtitleTracks.first { $0.id == id }?.signature }
+            ?? TrackPreferenceStore.offValue
+        TrackPreferenceStore.savePair(main: main, secondary: secondary, scope: preferenceScope)
     }
 
     /// 播放中临时加载本地外挂字幕（sub-add 并立即启用为主字幕）
@@ -422,7 +599,9 @@ final class MPVPlayerModel: ObservableObject {
         let second = Int(position)
         guard force || second != lastSavedSecond else { return }
         lastSavedSecond = second
-        if position > 3 {
+        // 只存「3 秒之后、离片尾至少 10 秒」的位置：停在最后几秒的续播点会让下次打开
+        // 直接落进片尾窗口、甚至立刻播完（S1）；播完时该点的清除在 EOF 处理里做
+        if position > 3, position < duration - 10 {
             ResumeStore.save(key: currentKey, seconds: position, duration: duration)
         }
     }
@@ -431,15 +610,18 @@ final class MPVPlayerModel: ObservableObject {
 
     private func handleFileLoaded() {
         fileLoaded = true
+        isBuffering = false
         guard let vc = controller else { return }
 
-        let w = vc.getDouble(MPVProperty.width)
-        let h = vc.getDouble(MPVProperty.height)
-        if w > 0, h > 0 { videoIsLandscape = w > h }
+        // 显示宽高要计入旋转元数据（竖拍视频 rotate=90 时编码宽高是反的）
+        let displaySize = vc.videoDisplaySize()
+        if displaySize.width > 0, displaySize.height > 0 {
+            videoIsLandscape = displaySize.width > displaySize.height
+        }
         let d = vc.getDouble(MPVProperty.duration)
         if d > 0 { duration = d }
 
-        refreshTracks()
+        performTrackRefresh()
         refreshChapters()
         applySubtitleFontSize()
 
@@ -447,7 +629,9 @@ final class MPVPlayerModel: ObservableObject {
         var startPosition = vc.getDouble(MPVProperty.timePos)
         if let resume = pendingResumePosition {
             pendingResumePosition = nil
-            if resume > 3, duration <= 0 || resume < duration {
+            // 落位也要离片尾至少 10 秒（与 saveResume 同口径，S1）：更靠后的点不续，
+            // 宁可从头播，也不能一打开就落进片尾窗口立刻播完
+            if resume > 3, duration <= 0 || resume < duration - 10 {
                 vc.seekAbsolute(resume)
                 position = resume
                 startPosition = resume
@@ -455,13 +639,16 @@ final class MPVPlayerModel: ObservableObject {
             }
         }
 
-        // 沿用上次倍速（设置可关），与系统播放路径一致
+        // 倍速与两条播放路同一口径（B4）：记忆开 → 按记忆恢复；记忆关 → 强制 1.0×。
+        // 引擎的 speed 跨文件保留，不显式落定会把上一个文件的倍速漂进新文件
         if UserDefaults.standard.object(forKey: "settings.rememberRate") as? Bool != false,
            let saved = UserDefaults.standard.object(forKey: "player.lastRate") as? Double,
            saved > 0, abs(saved - 1.0) > 0.01 {
             rate = saved
-            vc.setRate(saved)
+        } else {
+            rate = 1.0
         }
+        vc.setRate(rate)
 
         // 跳过片头：从片头范围内起播（新片或续播位置仍在片头里）时直接跳到片头结束；
         // 判断位置用续播落位后的有效起点（seek 是异步命令，立即回读 time-pos 仍是旧值）
@@ -487,11 +674,69 @@ final class MPVPlayerModel: ObservableObject {
         } else {
             applyTrackPreferences()
         }
+        if !subtitleTracks.isEmpty { preferencesSettled = true }
+
+        // 全景声旁路 probe：后台 demux 一遍，把每条音轨的全景声标注回填（未选中轨 mpv 读不到 profile）
+        startAtmosProbe()
+    }
+
+    /// FFmpeg 旁路 probe：按 ff-index 对位、codec 名二次校验后回填 probeAtmos；
+    /// 对位对不上就弃用，宁可不标也不错标（MKV 内置 demuxer 时 ff-index 无硬保证）
+    private func startAtmosProbe() {
+        guard let url = currentURL, url.isFileURL else { return }
+        let key = currentKey
+        Task.detached(priority: .utility) {
+            let streams = FFmpegAudioProbe.audioStreams(for: url)
+            guard !streams.isEmpty else { return }
+            await MainActor.run { [weak self] in
+                guard let self, self.currentKey == key else { return }
+                var changed = false
+                for index in self.audioTracks.indices {
+                    let track = self.audioTracks[index]
+                    guard let hit = streams.first(where: { $0.streamIndex == track.ffIndex }) else { continue }
+                    if let codec = track.codec, !codec.isEmpty,
+                       hit.codecName != codec.lowercased() { continue }
+                    if hit.isAtmos != track.probeAtmos {
+                        self.audioTracks[index].probeAtmos = hit.isAtmos
+                        changed = true
+                    }
+                }
+                if changed {
+                    AppLog.add("播放", "音轨全景声标注已由 FFmpeg 旁路 probe 回填")
+                }
+            }
+        }
     }
 
     /// 音轨＋主字幕＋副字幕：先按记忆（单剧优先于全局），无记忆时用默认策略
     private func applyTrackPreferences() {
         applyAudioPreference()
+
+        // 双字幕先整对恢复（B3）：成对记录命中且主轨还在 → 副轨只按记录恢复；
+        // 主轨对不上则整对作废、回落单条逻辑，绝不拼出「默认主轨＋记忆副轨」的变形组合
+        if let pair = TrackPreferenceStore.pair(scope: preferenceScope) {
+            var mainOK = false
+            if pair.main == TrackPreferenceStore.offValue {
+                selectSubtitle(nil, record: false)
+                mainOK = true
+            } else if let track = MPVTrack.match(signature: pair.main, in: subtitleTracks) {
+                selectSubtitle(track.id, record: false)
+                mainOK = true
+            }
+            if mainOK {
+                if pair.secondary == TrackPreferenceStore.offValue {
+                    selectSecondarySubtitle(nil, record: false)
+                } else if let track = MPVTrack.match(signature: pair.secondary, in: subtitleTracks),
+                          track.id != selectedSubtitleID {
+                    selectSecondarySubtitle(track.id, record: false)
+                } else {
+                    selectSecondarySubtitle(nil, record: false)
+                    AppLog.add("播放", "记忆的副字幕轨在本文件不可用，已跳过副字幕恢复")
+                }
+                return
+            }
+            AppLog.add("播放", "记忆的双字幕组合主轨在本文件不可用，改走单条记忆/默认选轨")
+        }
 
         if let saved = TrackPreferenceStore.value(kind: "sub", scope: preferenceScope) {
             if saved == TrackPreferenceStore.offValue {
@@ -527,28 +772,72 @@ final class MPVPlayerModel: ObservableObject {
                 ? a.element.subtitleDefaultScore < b.element.subtitleDefaultScore
                 : a.offset > b.offset
         }?.element
-        if let best {
+        // 最高分 ≤ 0：只有强制/特效/其他语言轨，宁可不开字幕也不自动选错轨
+        if let best, best.subtitleDefaultScore > 0 {
             selectSubtitle(best.id, record: false)
             AppLog.add("播放", "已默认选中内封字幕：\(best.displayName)")
         }
     }
 
+    /// 轨道刷新入口（合并去抖）：track-list 观察、sub-add 完成会接连触发全量重读，
+    /// 100ms 内的重复触发合并成一次（A1）
     private func refreshTracks() {
+        guard !trackRefreshScheduled else { return }
+        trackRefreshScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+            self.trackRefreshScheduled = false
+            self.performTrackRefresh()
+        }
+    }
+
+    /// 打开音轨/字幕面板前调用：选中轨的 codec-profile 这时多半已可读，刷一次让全景声标注追上
+    func refreshTrackInfoForMenu() {
+        refreshTracks()
+    }
+
+    private func performTrackRefresh() {
         guard let vc = controller else { return }
         let raw = vc.readTracks()
-        audioTracks = raw.filter { $0.type == "audio" }.map {
-            MPVTrack(id: $0.id, type: $0.type, lang: $0.lang, title: $0.title,
-                     codec: $0.codec, isExternal: $0.isExternal)
+        let oldAudio = audioTracks
+        audioTracks = raw.filter { $0.type == "audio" }.map { info in
+            var track = MPVTrack(id: info.id, type: info.type, lang: info.lang, title: info.title,
+                                 codec: info.codec, isExternal: info.isExternal)
+            track.codecProfile = info.codecProfile
+            track.channelCount = info.channelCount
+            track.ffIndex = info.ffIndex
+            track.isForced = info.isForced
+            track.isDefault = info.isDefault
+            track.isHearingImpaired = info.isHearingImpaired
+            // probe 的标注粘性保留：重读轨道不能把 FFmpeg 旁路证据冲掉（profile 在位时以 profile 为准）
+            track.probeAtmos = oldAudio.first { $0.id == info.id }?.probeAtmos ?? false
+            return track
         }
-        subtitleTracks = raw.filter { $0.type == "sub" }.map {
-            MPVTrack(id: $0.id, type: $0.type, lang: $0.lang, title: $0.title,
-                     codec: $0.codec, isExternal: $0.isExternal)
+        subtitleTracks = raw.filter { $0.type == "sub" }.map { info in
+            var track = MPVTrack(id: info.id, type: info.type, lang: info.lang, title: info.title,
+                                 codec: info.codec, isExternal: info.isExternal)
+            track.codecProfile = info.codecProfile
+            track.isForced = info.isForced
+            track.isDefault = info.isDefault
+            track.isHearingImpaired = info.isHearingImpaired
+            return track
         }
         if let selected = raw.first(where: { $0.type == "audio" && $0.isSelected }) {
             selectedAudioID = selected.id
         }
         if let selected = raw.first(where: { $0.type == "sub" && $0.isSelected }) {
             selectedSubtitleID = selected.id
+        }
+        // 对账日志：选中轨 profile 的实际返回值，方便真机核对全景声判定字符串
+        if let selected = audioTracks.first(where: { $0.id == selectedAudioID }) {
+            AppLog.add("播放", "选中音轨对账：codec=\(selected.codec ?? "-")，profile=\(selected.codecProfile ?? "nil")，probeAtmos=\(selected.probeAtmos)，徽标=\(selected.codecBadgeLabel)")
+        }
+        // A6：FILE_LOADED 之后才枚举出来的轨道（慢 demux / 后加外挂），
+        // 在选轨还没结算、用户也没手动动过时补跑一次记忆/默认选轨
+        if fileLoaded, !preferencesSettled, !userTouchedTracks,
+           !subtitleTracks.isEmpty, pendingExternalSubtitle == nil {
+            preferencesSettled = true
+            applyTrackPreferences()
         }
     }
 
@@ -567,6 +856,9 @@ final class MPVPlayerModel: ObservableObject {
         }
         let outro = PlayerSettings.outroSeconds
         guard outro > 0, duration > 0 else { return }
+        // 短内容防线：总时长不足「片头＋片尾＋30 秒」的内容不设片尾窗口，
+        // 否则整段都落在窗口里、一开播就弹跳过按钮甚至自动切集（M1）
+        guard duration > PlayerSettings.introSeconds + outro + 30 else { return }
         if duration - value <= outro, value > 3 {
             outroPromptVisible = true
             if outroAdvanceAvailable, !outroFired {
@@ -586,6 +878,11 @@ extension MPVPlayerModel: MPVPlayerDelegate {
         switch propertyName {
         case MPVProperty.timePos:
             guard let value = data as? Double, value.isFinite else { return }
+            // 选中音轨的 codec-profile 只有开始解码后才有值：播过 0.5 秒回读一次回填全景声标注
+            if value > 0.5, !profileRefillDone {
+                profileRefillDone = true
+                refreshTracks()
+            }
             // 发布节流：位置每 0.25s 最多刷新一次，避免逐帧冲击 SwiftUI；续播保存按整秒
             if abs(value - lastPublishedPosition) >= 0.25 || isPaused {
                 lastPublishedPosition = value
@@ -626,6 +923,8 @@ extension MPVPlayerModel: MPVPlayerDelegate {
         saveResume(force: true)
         switch reason {
         case 0:
+            // 自然播完：清掉这一集的续播点，下次从头开始（S1）
+            if !currentKey.isEmpty { ResumeStore.remove(key: currentKey) }
             guard !endFired else { return }
             endFired = true
             onPlaybackEnded?()
