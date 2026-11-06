@@ -59,8 +59,32 @@ final class LibraryStore: ObservableObject {
     private let folderBookmarkKey = "scan.folderBookmark.v1"
     private let folderNameKey = "scan.folderName.v1"
     private let sourcesKey = "scan.folders.v2"
-    private var accessingURL: URL?
-    private var accessingSubtitleURL: URL?
+    /// 最近一次导入失败的用户可读原因（导入视图据此弹错；成功时为 nil）
+    @Published private(set) var lastImportError: String?
+    /// 安全作用域租约（S3）：同一作用域可被多方同时持有（播放、缩略图生成、外挂字幕），
+    /// 按 URL 引用计数，最后一个释放者才真正 stop；旧实现只有单槽，
+    /// 后台生成一张缩略图就会把正在播放文件的访问权掐断
+    private var scopeAccessCounts: [URL: Int] = [:]
+    /// 每个条目当前持有的租约（视频＋字幕），stopAccessing(for:) 按条目精确释放
+    private var accessLeases: [UUID: [URL]] = [:]
+
+    private func beginScopeAccess(_ url: URL, for item: MediaItem) {
+        if (scopeAccessCounts[url] ?? 0) == 0 {
+            guard url.startAccessingSecurityScopedResource() else { return }
+        }
+        scopeAccessCounts[url, default: 0] += 1
+        accessLeases[item.id, default: []].append(url)
+    }
+
+    private func endScopeAccess(_ url: URL) {
+        guard let count = scopeAccessCounts[url] else { return }
+        if count <= 1 {
+            scopeAccessCounts[url] = nil
+            url.stopAccessingSecurityScopedResource()
+        } else {
+            scopeAccessCounts[url] = count - 1
+        }
+    }
 
     static let videoExtensions: Set<String> = ["mkv", "mp4", "mov", "m4v", "ts", "m2ts",
                                                "avi", "webm", "wmv", "flv", "mpg", "mpeg", "3gp"]
@@ -108,7 +132,8 @@ final class LibraryStore: ObservableObject {
 
     // MARK: - 增删
 
-    func addFile(url: URL) {
+    @discardableResult
+    func addFile(url: URL) -> String? {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         var bookmark = try? url.bookmarkData(options: [],
@@ -121,13 +146,17 @@ final class LibraryStore: ObservableObject {
             let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
             if size > 200_000_000 {
                 AppLog.add("导入", "\(url.lastPathComponent)：约 \(size / 1_000_000)MB 且书签创建失败，已跳过；大文件请用「添加文件夹」加入它所在的文件夹")
-                return
+                lastImportError = String(localized: "这个文件太大，请用「添加文件夹」加入它所在的文件夹")
+                return lastImportError
             }
             AppLog.add("导入", "\(url.lastPathComponent)：书签创建失败，尝试拷贝进 App 文档目录")
             if let copied = copyIntoDocuments(url) {
                 finalURL = copied
                 bookmark = nil
                 copiedRelativePath = copied.lastPathComponent
+            } else {
+                lastImportError = String(localized: "文件加入失败，请重试")
+                return lastImportError
             }
         }
         var item = MediaItem(name: finalURL.deletingPathExtension().lastPathComponent,
@@ -138,13 +167,26 @@ final class LibraryStore: ObservableObject {
         items.insert(item, at: 0)
         save()
         AppLog.add("导入", "已加入媒体库：\(item.name)（书签\(bookmark == nil ? "无" : "有")）")
+        return nil
     }
 
-    /// 书签建不起来时的兜底：把文件拷进 App 自己的 Documents 目录
+    /// 书签建不起来时的兜底：把文件拷进 App 自己的 Documents 目录。
+    /// 同名已存在时先比对大小：一致才当同一文件复用，不一致是另一部同名片，走序号命名（L5），
+    /// 绝不把 B 片静默指向 A 片的文件
     private func copyIntoDocuments(_ url: URL) -> URL? {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let dest = docs.appendingPathComponent(url.lastPathComponent)
-        if FileManager.default.fileExists(atPath: dest.path) { return dest }
+        var dest = docs.appendingPathComponent(url.lastPathComponent)
+        if FileManager.default.fileExists(atPath: dest.path) {
+            let existingSize = (try? dest.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
+            let incomingSize = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
+            if let existingSize, existingSize == incomingSize { return dest }
+            var counter = 1
+            repeat {
+                dest = docs.appendingPathComponent(
+                    "\(url.deletingPathExtension().lastPathComponent) \(counter).\(url.pathExtension)")
+                counter += 1
+            } while FileManager.default.fileExists(atPath: dest.path)
+        }
         do {
             try FileManager.default.copyItem(at: url, to: dest)
             AppLog.add("导入", "\(url.lastPathComponent)：已拷贝到 App 文档目录")
@@ -168,13 +210,22 @@ final class LibraryStore: ObservableObject {
     }
 
     func remove(at offsets: IndexSet) {
+        let removed = offsets.map { items[$0] }
         items.remove(atOffsets: offsets)
+        for item in removed { cleanupAfterRemove(item) }
         save()
     }
 
     func remove(_ item: MediaItem) {
         items.removeAll { $0.id == item.id }
+        cleanupAfterRemove(item)
         save()
+    }
+
+    /// 删条目时顺带清它的续播点与缩略图缓存，不留孤儿数据（L3）
+    private func cleanupAfterRemove(_ item: MediaItem) {
+        ResumeStore.remove(key: item.id.uuidString)
+        ThumbnailStore.deleteCached(for: item)
     }
 
     // MARK: - 扫描文件夹
@@ -188,6 +239,7 @@ final class LibraryStore: ObservableObject {
                                                includingResourceValuesForKeys: nil,
                                                relativeTo: nil) else {
             AppLog.add("扫描", "添加文件夹失败：\(url.lastPathComponent) 书签创建失败")
+            lastImportError = String(localized: "文件夹加入失败，请重试")
             return (0, 0)
         }
         if let existing = sources.firstIndex(where: { $0.name == url.lastPathComponent }) {
@@ -311,7 +363,7 @@ final class LibraryStore: ObservableObject {
         _ = scanOwnDocuments()
     }
 
-    /// 递归扫描文件夹，把新视频加入媒体库（按片名＋扩展名去重，已在库的不重复添加）
+    /// 递归扫描文件夹，把新视频加入媒体库（按文件路径去重，已在库的不重复添加）
     /// v1.0.2：条目改存「文件夹书签＋相对路径」定位（逐文件 minimalBookmark 在 iOS 27 上解析失败）；
     /// 扫描命中老条目时顺带修复其定位，旧版导入的坏条目重新扫描后自愈。
     private func scanFolderContents(_ folder: URL, folderBookmark: Data?) -> (added: Int, found: Int) {
@@ -324,25 +376,47 @@ final class LibraryStore: ObservableObject {
         var found = 0
         var newItems: [MediaItem] = []
         var repaired = 0
-        var indexByKey: [String: Int] = [:]
+        // 去重键（S5）：文件的绝对路径，由条目现有定位各自还原（文件源根＋相对路径 /
+        // 本机相对路径 / 旧版逐文件书签）。旧键是「片名＋扩展名」，同名不同目录的两集会互相顶掉；
+        // 片名从此只作展示与剧集分组
+        var indexByPath: [String: Int] = [:]
+        var rootCache: [Data: URL] = [:]
         for (i, item) in items.enumerated() {
-            indexByKey["\(item.name.lowercased())|\(item.fileExtension ?? "")"] = i
-            if indexByKey["\(item.name.lowercased())|"] == nil {
-                indexByKey["\(item.name.lowercased())|"] = i
+            if let rel = item.relativePath {
+                if let data = item.sourceBookmark {
+                    let root: URL?
+                    if let cached = rootCache[data] {
+                        root = cached
+                    } else {
+                        var rootStale = false
+                        root = try? URL(resolvingBookmarkData: data, options: [],
+                                        relativeTo: nil, bookmarkDataIsStale: &rootStale)
+                        if let root { rootCache[data] = root }
+                    }
+                    if let root {
+                        indexByPath[root.appendingPathComponent(rel).standardizedFileURL.path] = i
+                    }
+                } else {
+                    indexByPath[docs.appendingPathComponent(rel).standardizedFileURL.path] = i
+                }
+            } else if let data = item.bookmark {
+                var itemStale = false
+                if let resolved = try? URL(resolvingBookmarkData: data, options: [],
+                                           relativeTo: nil, bookmarkDataIsStale: &itemStale) {
+                    indexByPath[resolved.standardizedFileURL.path] = i
+                }
             }
         }
-        var scanNames = Set<String>()
         for case let fileURL as URL in enumerator {
             let ext = fileURL.pathExtension.lowercased()
             guard Self.videoExtensions.contains(ext) else { continue }
             guard (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else { continue }
             found += 1
             let name = fileURL.deletingPathExtension().lastPathComponent
-            let lower = name.lowercased()
             let rel = fileURL.path.hasPrefix(basePath + "/")
                 ? String(fileURL.path.dropFirst(basePath.count + 1))
                 : fileURL.lastPathComponent
-            if let idx = indexByKey["\(lower)|\(ext)"] ?? indexByKey["\(lower)|"] {
+            if let idx = indexByPath[fileURL.standardizedFileURL.path] {
                 // 已在库：修复/刷新定位（id 不变，续播与刮削关联都保留）
                 if items[idx].sourceBookmark != folderBookmark || items[idx].relativePath != rel {
                     items[idx].sourceBookmark = folderBookmark
@@ -351,8 +425,6 @@ final class LibraryStore: ObservableObject {
                 }
                 continue
             }
-            if scanNames.contains(lower) { continue }
-            scanNames.insert(lower)
             var item = MediaItem(name: name, bookmark: nil, urlString: nil)
             item.sourceBookmark = folderBookmark
             item.relativePath = rel
@@ -397,9 +469,9 @@ final class LibraryStore: ObservableObject {
 
     // MARK: - 解析可播放地址
 
-    /// 返回可播放 URL；本地文件会开启安全作用域访问，调用方播完后应调用 stopAccessing()
+    /// 返回可播放 URL；本地文件会开启安全作用域访问（按条目记租约），
+    /// 播放结束后调用 stopAccessing(for:) 释放。重复解析同一条目只叠加租约、不再先掐旧的（S3）
     func resolveURL(for item: MediaItem) -> URL? {
-        stopAccessing()
         if let s = item.urlString { return URL(string: s) }
         // v1.0.2：相对路径定位——文件源文件走「文件夹书签＋相对路径」，本机目录文件直接拼文档目录
         if let rel = item.relativePath {
@@ -411,9 +483,7 @@ final class LibraryStore: ObservableObject {
                     AppLog.add("播放", "\(item.name)：文件源书签解析失败")
                     return nil
                 }
-                if folderURL.startAccessingSecurityScopedResource() {
-                    accessingURL = folderURL
-                }
+                beginScopeAccess(folderURL, for: item)
                 return folderURL.appendingPathComponent(rel)
             }
             let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -431,17 +501,23 @@ final class LibraryStore: ObservableObject {
             AppLog.add("播放", "\(item.name)：书签解析失败")
             return nil
         }
-        if url.startAccessingSecurityScopedResource() {
-            accessingURL = url
-        }
+        beginScopeAccess(url, for: item)
         return url
     }
 
+    /// 释放某个条目的全部租约（视频＋字幕）；其他持有者（如缩略图生成）不受影响
+    func stopAccessing(for item: MediaItem) {
+        guard let leases = accessLeases.removeValue(forKey: item.id) else { return }
+        for url in leases { endScopeAccess(url) }
+    }
+
+    /// 释放全部租约（兜底清理）
     func stopAccessing() {
-        accessingURL?.stopAccessingSecurityScopedResource()
-        accessingURL = nil
-        accessingSubtitleURL?.stopAccessingSecurityScopedResource()
-        accessingSubtitleURL = nil
+        let all = accessLeases
+        accessLeases = [:]
+        for (_, leases) in all {
+            for url in leases { endScopeAccess(url) }
+        }
     }
 
     // MARK: - 外挂字幕
@@ -469,39 +545,51 @@ final class LibraryStore: ObservableObject {
         var stale = false
         guard let url = try? URL(resolvingBookmarkData: data, options: [],
                                  relativeTo: nil, bookmarkDataIsStale: &stale) else { return nil }
-        if url.startAccessingSecurityScopedResource() {
-            accessingSubtitleURL = url
-        }
+        beginScopeAccess(url, for: item)
         guard let fileData = try? Data(contentsOf: url) else { return nil }
         let cues = SubtitleParser.parse(data: fileData, fileExtension: url.pathExtension)
         return cues.isEmpty ? nil : cues
     }
 
     /// 解析外挂字幕文件的可读 URL（供直读播放以 sub-add 直接加载，字幕由引擎渲染）；
-    /// 没有挂载或书签失效返回 nil。访问权保持到 stopAccessing()（与视频同一生命周期）。
+    /// 没有挂载或书签失效返回 nil。访问权按条目租约保持（与视频同一生命周期）。
     func externalSubtitleURL(for item: MediaItem) -> URL? {
         guard let data = item.subtitleBookmark else { return nil }
         var stale = false
         guard let url = try? URL(resolvingBookmarkData: data, options: [],
                                  relativeTo: nil, bookmarkDataIsStale: &stale) else { return nil }
-        if url.startAccessingSecurityScopedResource() {
-            accessingSubtitleURL = url
-        }
+        beginScopeAccess(url, for: item)
         return url
     }
 
     // MARK: - 持久化
 
+    /// 条目落盘改文件存储（M12）：整表 JSON 塞 UserDefaults 每次变更全量重写，
+    /// 条目多了之后主线程卡顿；文件写用原子替换。旧 UserDefaults 数据首次启动自动迁入
+    private var itemsFileURL: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("LumenData", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("library-items.json")
+    }
+
     private func save() {
-        if let data = try? JSONEncoder().encode(items) {
-            UserDefaults.standard.set(data, forKey: key)
-        }
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        try? data.write(to: itemsFileURL, options: [.atomic])
     }
 
     private func load() {
+        if let data = try? Data(contentsOf: itemsFileURL),
+           let decoded = try? JSONDecoder().decode([MediaItem].self, from: data) {
+            items = decoded
+            return
+        }
         guard let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode([MediaItem].self, from: data) else { return }
         items = decoded
+        if let fileData = try? JSONEncoder().encode(decoded) {
+            try? fileData.write(to: itemsFileURL, options: [.atomic])
+        }
     }
 }
 
@@ -518,6 +606,12 @@ enum ThumbnailStore {
     static func cached(for item: MediaItem) -> UIImage? {
         let url = directory.appendingPathComponent(item.id.uuidString + ".jpg")
         return UIImage(contentsOfFile: url.path)
+    }
+
+    /// 删除条目时清掉它的缩略图缓存（L3）
+    static func deleteCached(for item: MediaItem) {
+        try? FileManager.default.removeItem(
+            at: directory.appendingPathComponent(item.id.uuidString + ".jpg"))
     }
 
     /// 生成缩略图并落盘缓存；只处理本地文件（直链跳过）
@@ -548,7 +642,8 @@ enum ThumbnailStore {
             return UIImage(cgImage: cg)
         }.value
 
-        if needsScopeStop { store.stopAccessing() }
+        // 只释放本条目的租约，不碰其他条目/正在播放的访问权（S3）
+        if needsScopeStop { store.stopAccessing(for: item) }
         if let image, let data = image.jpegData(compressionQuality: 0.75) {
             try? data.write(to: directory.appendingPathComponent(item.id.uuidString + ".jpg"))
         }
@@ -580,6 +675,14 @@ enum ResumeStore {
     static func progress(forKey itemKey: String) -> Double? {
         guard let pair = all()[itemKey], pair.count == 2, pair[1] > 0 else { return nil }
         return min(1, max(0, pair[0] / pair[1]))
+    }
+
+    /// 删除单条续播记录（播完自动清、删条目时清）
+    static func remove(key itemKey: String) {
+        var dict = all()
+        guard dict[itemKey] != nil else { return }
+        dict[itemKey] = nil
+        UserDefaults.standard.set(dict, forKey: key)
     }
 
     static func clearAll() {
@@ -619,12 +722,28 @@ final class ScrapeStore: ObservableObject {
     @Published private(set) var shows: [String: ShowMeta] = [:]
     private var inFlight: Set<String> = []
     private let storageKey = "scrape.shows.v1"
+    /// 刮削失败的负缓存（剧名小写 → 失败时间戳）：未命中不再每次启动全量重搜（M8）
+    private var failureDates: [String: Double] = [:]
+    private let failuresKey = "scrape.failures.v1"
+    /// 负缓存有效期：7 天
+    private static let failureTTL: Double = 7 * 24 * 3600
 
     init() {
         if let data = UserDefaults.standard.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode([String: ShowMeta].self, from: data) {
             shows = decoded
         }
+        failureDates = UserDefaults.standard.dictionary(forKey: failuresKey) as? [String: Double] ?? [:]
+    }
+
+    private func recordFailure(_ key: String) {
+        failureDates[key] = Date().timeIntervalSince1970
+        UserDefaults.standard.set(failureDates, forKey: failuresKey)
+    }
+
+    private func failureIsFresh(_ key: String) -> Bool {
+        guard let stamp = failureDates[key] else { return false }
+        return Date().timeIntervalSince1970 - stamp < Self.failureTTL
     }
 
     func meta(for show: String) -> ShowMeta? { shows[show.lowercased()] }
@@ -663,21 +782,36 @@ final class ScrapeStore: ObservableObject {
         }
         for (show, infos) in groups where infos.count >= 2 {
             let key = show.lowercased()
-            guard shows[key] == nil, !inFlight.contains(key) else { continue }
-            inFlight.insert(key)
             let wanted = Set(infos.map { Self.episodeKey(season: $0.season, episode: $0.episode) })
+            if let existing = shows[key] {
+                // 数据在但海报文件被系统清掉（图片在 Caches）：允许重抓一次补图（B6）
+                if let poster = existing.posterFile,
+                   !FileManager.default.fileExists(atPath: Self.scrapeDir.appendingPathComponent(poster).path),
+                   !inFlight.contains(key) {
+                    inFlight.insert(key)
+                    Task { await self.scrape(show: show, key: key, wantedEpisodes: wanted) }
+                }
+                continue
+            }
+            guard !inFlight.contains(key), !failureIsFresh(key) else { continue }
+            inFlight.insert(key)
             Task { await self.scrape(show: show, key: key, wantedEpisodes: wanted) }
         }
     }
 
     private func scrape(show: String, key: String, wantedEpisodes: Set<String>) async {
         defer { inFlight.remove(key) }
+        // 命中校验（M8）：候选先过分数门槛，再验标题是否对得上（归一化后相等/互含，
+        // 或分数极高才放行），不再无条件取 hits.first 把同分更高的另一部剧刮进来；
+        // 没有可信匹配就写负缓存，7 天内不重复全量搜索
         guard let encoded = show.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let searchURL = URL(string: "https://api.tvmaze.com/search/shows?q=\(encoded)"),
               let (searchData, _) = try? await URLSession.shared.data(from: searchURL),
               let hits = try? JSONDecoder().decode([TVSearchHit].self, from: searchData),
-              let hit = hits.first, hit.score >= 0.5 else {
-            AppLog.add("刮削", "\(show)：TVmaze 没有匹配到")
+              let hit = hits.filter({ $0.score >= 0.5 })
+                  .first(where: { Self.isPlausible($0, for: show) }) else {
+            recordFailure(key)
+            AppLog.add("刮削", "\(show)：TVmaze 没有可信匹配，已记入负缓存")
             return
         }
         let s = hit.show
@@ -716,6 +850,10 @@ final class ScrapeStore: ObservableObject {
             meta.cast.append(member)
         }
         shows[key] = meta
+        if failureDates[key] != nil {
+            failureDates[key] = nil
+            UserDefaults.standard.set(failureDates, forKey: failuresKey)
+        }
         if let data = try? JSONEncoder().encode(shows) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
@@ -735,6 +873,21 @@ final class ScrapeStore: ObservableObject {
             try data.write(to: scrapeDir.appendingPathComponent(name))
             return name
         } catch { return nil }
+    }
+
+    /// 候选可信度校验：标题归一化（去大小写/标点/空格）后相等或互含才算对上；
+    /// 实在对不上时只认分数 ≥ 0.9 的强命中
+    private static func isPlausible(_ hit: TVSearchHit, for show: String) -> Bool {
+        func normalized(_ s: String) -> String {
+            s.lowercased().filter { $0.isLetter || $0.isNumber }
+        }
+        let wanted = normalized(show)
+        let got = normalized(hit.show.name)
+        if !wanted.isEmpty, !got.isEmpty,
+           wanted == got || wanted.contains(got) || got.contains(wanted) {
+            return true
+        }
+        return hit.score >= 0.9
     }
 
     static func stripHTML(_ html: String?) -> String? {
