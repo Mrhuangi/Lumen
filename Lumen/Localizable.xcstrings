@@ -239,6 +239,23 @@
         }
       }
     },
+    "全部 · %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All · %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部 · %lld"
+          }
+        }
+      }
+    },
     "全部影片": {
       "extractionState": "manual",
       "localizations": {
@@ -269,6 +286,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "共 %lld 个视频，新加入 %lld 个。"
+          }
+        }
+      }
+    },
+    "共 %lld 季": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Seasons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 季"
           }
         }
       }
@@ -2853,6 +2887,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld 集 · %@"
+          }
+        }
+      }
+    },
+    "第%lld季 第%lld集": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S%lld E%lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第%lld季 第%lld集"
           }
         }
       }
