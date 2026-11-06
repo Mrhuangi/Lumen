@@ -30,6 +30,7 @@ final class PlayerModel: ObservableObject {
     private var statusObservation: NSKeyValueObservation?
     private var rateObservation: NSKeyValueObservation?
     private var endObserver: NSObjectProtocol?
+    private var failureObserver: NSObjectProtocol?
     private var outroFired = false
 
     /// 播放结束回调（用于自动连播下一集）
@@ -66,10 +67,13 @@ final class PlayerModel: ObservableObject {
                 self.updateCurrentSubtitle(at: seconds)
                 self.checkOutro(at: seconds)
             }
-            // 记住播放速度（用户在系统界面改了倍速就存下来，下次自动沿用）
-            let rate = Double(self.player.rate)
-            if rate > 0 {
-                UserDefaults.standard.set(rate, forKey: "player.lastRate")
+            // 记住播放速度（用户在系统界面改了倍速就存下来，下次自动沿用）；
+            // 记忆开关关着时绝不写，否则关掉记忆也会被周期观察者偷偷覆盖回去（记忆专项 B4）
+            if UserDefaults.standard.object(forKey: "settings.rememberRate") as? Bool != false {
+                let rate = Double(self.player.rate)
+                if rate > 0 {
+                    UserDefaults.standard.set(rate, forKey: "player.lastRate")
+                }
             }
         }
     }
@@ -97,7 +101,21 @@ final class PlayerModel: ObservableObject {
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.onPlaybackEnded?() }
+            Task { @MainActor in
+                guard let self else { return }
+                // 自然播完清续播点，与直读路同口径（S1）
+                if !self.currentKey.isEmpty { ResumeStore.remove(key: self.currentKey) }
+                self.onPlaybackEnded?()
+            }
+        }
+        // 播放中途失败（网络/解码）此前无人监听，会静默卡死：接上写报错条（M4）
+        if let failureObserver { NotificationCenter.default.removeObserver(failureObserver) }
+        failureObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main
+        ) { [weak self] note in
+            let message = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?
+                .localizedDescription ?? String(localized: "播放失败")
+            Task { @MainActor in self?.errorMessage = message }
         }
 
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
@@ -169,6 +187,8 @@ final class PlayerModel: ObservableObject {
         let outro = PlayerSettings.outroSeconds
         let duration = player.currentItem?.duration.seconds ?? 0
         guard outro > 0, duration.isFinite, duration > 0 else { return }
+        // 短内容防线：总时长不足「片头＋片尾＋30 秒」不设片尾窗口（与直读路同口径，M1）
+        guard duration > PlayerSettings.introSeconds + outro + 30 else { return }
         if duration - seconds <= outro, seconds > 3 {
             outroPromptVisible = true
             if outroAdvanceAvailable, !outroFired {
