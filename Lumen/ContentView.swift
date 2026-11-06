@@ -203,6 +203,7 @@ struct LibraryView: View {
     @State private var activeItem: MediaItem?
     @State private var scanSummary: String?
     @State private var importError: String?
+    @State private var autoplayDone = false
 
     private var sort: LibrarySort { LibrarySort(rawValue: sortRaw) ?? .recentPlayed }
     private var display: LibraryDisplay { LibraryDisplay(rawValue: displayRaw) ?? .grid }
@@ -289,11 +290,13 @@ struct LibraryView: View {
             store.rescanSavedFolder()
             scrape.ensureAll(items: store.items)
         }
+        .onAppear { autoplayIfNeeded() }
         .onChange(of: store.items.count) { _, _ in
             scrape.ensureAll(items: store.items)
+            autoplayIfNeeded()
         }
-        .playerCover(item: $activeItem) { item, context in
-            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
+        .fullScreenCover(item: $activeItem) { item in
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
 
@@ -349,58 +352,79 @@ struct LibraryView: View {
         sortedItems.filter { !groupedIDs.contains($0.id) }
     }
 
+    private var allRecentItems: [MediaItem] {
+        store.items.sorted { $0.addedAt > $1.addedAt }
+    }
+
     private var recentItems: [MediaItem] {
-        Array(store.items.sorted { $0.addedAt > $1.addedAt }.prefix(10))
+        Array(allRecentItems.prefix(10))
     }
 
     private var homeBody: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 26) {
-                if !store.continueWatching.isEmpty {
-                    continueSection
+        GeometryReader { geo in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 28) {
+                    if !store.continueWatching.isEmpty {
+                        continueSection(cardWidth: min(300, max(252, geo.size.width * 0.68)))
+                    }
+                    recentSection
+                    if !seriesGroups.isEmpty {
+                        seriesSection
+                    }
+                    standaloneSection
                 }
-                recentSection
-                if !seriesGroups.isEmpty {
-                    seriesSection
-                }
-                standaloneSection
+                .padding(.top, 8)
+                // 底部留白大于悬浮 dock 高度，最后一个分区的文字不被压住
+                .padding(.bottom, 120)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
         }
     }
 
-    private func sectionTitle(_ title: LocalizedStringKey, count: Int? = nil) -> some View {
+    /// 分区标题行：左侧分区名，右侧「全部 · N ›」进入该分区的全量页
+    private func sectionHeader<Destination: View>(_ title: LocalizedStringKey,
+                                                  count: Int,
+                                                  @ViewBuilder destination: () -> Destination) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .font(.title3.weight(.bold))
             Spacer()
-            if let count {
-                Text("\(count)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            NavigationLink {
+                destination()
+            } label: {
+                HStack(spacing: 3) {
+                    Text("全部 · \(count)")
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, 16)
     }
 
-    private var continueSection: some View {
+    private func continueSection(cardWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("继续观看")
+            sectionHeader("继续观看", count: store.continueWatching.count) {
+                LibraryContinueGridPage(items: store.continueWatching)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(store.continueWatching) { item in
-                        ContinueCard(item: item) { activeItem = item }
+                        ContinueCard(item: item, width: cardWidth) { activeItem = item }
                             .contextMenu { mediaMenu(item) }
                     }
                 }
+                .padding(.horizontal, 16)
             }
         }
     }
 
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("最近添加")
+            sectionHeader("最近添加", count: allRecentItems.count) {
+                LibraryItemsGridPage(title: "最近添加", items: allRecentItems)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(recentItems) { item in
@@ -409,40 +433,47 @@ struct LibraryView: View {
                             .contextMenu { mediaMenu(item) }
                     }
                 }
+                .padding(.horizontal, 16)
             }
         }
     }
 
     private var seriesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("剧集")
+            sectionHeader("剧集", count: seriesGroups.count) {
+                LibrarySeriesGridPage(groups: seriesGroups)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(seriesGroups, id: \.show) { group in
                         NavigationLink {
                             SeriesView(show: group.show)
                         } label: {
-                            SeriesCard(show: group.show,
-                                       representative: group.episodes[0],
-                                       count: group.episodes.count)
+                            SeriesCard(show: group.show, episodes: group.episodes)
+                                .frame(width: 110)
                         }
                         .buttonStyle(.plain)
                     }
                 }
+                .padding(.horizontal, 16)
             }
         }
     }
 
     private var standaloneSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle(seriesGroups.isEmpty ? "全部影片" : "电影与其他",
-                         count: standaloneItems.count)
+            sectionHeader(seriesGroups.isEmpty ? "全部影片" : "电影与其他",
+                          count: standaloneItems.count) {
+                LibraryItemsGridPage(title: seriesGroups.isEmpty ? "全部影片" : "电影与其他",
+                                     items: standaloneItems)
+            }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 170), spacing: 12)], spacing: 18) {
                 ForEach(standaloneItems) { item in
                     MediaCell(item: item, showName: true) { activeItem = item }
                         .contextMenu { mediaMenu(item) }
                 }
             }
+            .padding(.horizontal, 16)
         }
     }
 
@@ -467,6 +498,15 @@ struct LibraryView: View {
             }
         }
         .listStyle(.plain)
+    }
+
+    /// CI 自测钩子：带 -autoplayFirst 启动时，条目载入后自动打开第一条能解析出集数的条目（只触发一次）
+    private func autoplayIfNeeded() {
+        guard !autoplayDone else { return }
+        guard ProcessInfo.processInfo.arguments.contains("-autoplayFirst") else { return }
+        guard let target = store.items.first(where: { EpisodeParser.parse($0.name) != nil }) else { return }
+        autoplayDone = true
+        activeItem = target
     }
 
     private func rescan() {
@@ -608,26 +648,225 @@ extension MediaItem {
     }
 }
 
+// MARK: - 卡片数据解析（显示名 / 分集行 / 年份：刮削优先，未刮削退清洗文件名）
+
+enum CardText {
+    /// 清洗文件名：去扩展名，点与下划线转空格
+    static func cleaned(_ name: String) -> String {
+        (name as NSString).deletingPathExtension
+            .replacingOccurrences(of: ".", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    /// 卡片显示名：刮削标题优先，其次解析出的剧名，最后清洗文件名
+    @MainActor
+    static func title(for item: MediaItem, scrape: ScrapeStore) -> String {
+        if let info = EpisodeParser.parse(item.name) {
+            return scrape.meta(for: info.show)?.title ?? info.show
+        }
+        return cleaned(item.name)
+    }
+
+    /// 分集行：「第2季 第2集 · 分集名」，非剧集条目返回 nil
+    @MainActor
+    static func episodeLine(for item: MediaItem, scrape: ScrapeStore) -> String? {
+        guard let info = EpisodeParser.parse(item.name) else { return nil }
+        var line = String(localized: "第\(info.season)季 第\(info.episode)集")
+        if let meta = scrape.meta(for: info.show),
+           let ep = meta.episodes[ScrapeStore.episodeKey(season: info.season, episode: info.episode)],
+           !ep.title.isEmpty {
+            line += " · \(ep.title)"
+        }
+        return line
+    }
+
+    /// 文件名里的年份（电影副信息用），解析不到返回 nil
+    static func year(in name: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: "(?:19|20)\\d{2}"),
+              let m = regex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name)),
+              let r = Range(m.range, in: name) else { return nil }
+        return String(name[r])
+    }
+
+    /// 秒数显示：不足 1 小时「28:04」，超过「1:01:11」
+    static func clock(_ seconds: Double) -> String {
+        let total = max(0, Int(seconds.rounded()))
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
+        return String(format: "%d:%02d", m, s)
+    }
+}
+
+/// 安静占位图：按名字取色的低饱和渐变 + 居中品牌字形，卡面上不出现任何文件名文字
+struct QuietArtwork: View {
+    let seed: String
+    var wide = false
+
+    private static let palettes: [(Color, Color)] = [
+        (Color(red: 0.16, green: 0.19, blue: 0.30), Color(red: 0.03, green: 0.03, blue: 0.07)),
+        (Color(red: 0.26, green: 0.14, blue: 0.27), Color(red: 0.07, green: 0.03, blue: 0.09)),
+        (Color(red: 0.10, green: 0.24, blue: 0.19), Color(red: 0.02, green: 0.07, blue: 0.05)),
+        (Color(red: 0.30, green: 0.21, blue: 0.11), Color(red: 0.08, green: 0.05, blue: 0.02)),
+        (Color(red: 0.09, green: 0.23, blue: 0.27), Color(red: 0.02, green: 0.07, blue: 0.08)),
+        (Color(red: 0.30, green: 0.12, blue: 0.15), Color(red: 0.08, green: 0.03, blue: 0.04)),
+    ]
+
+    private var palette: (Color, Color) {
+        let value = seed.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        return Self.palettes[abs(value) % Self.palettes.count]
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [palette.0, palette.1], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LiuGuangGlyph()
+                .opacity(0.55)
+        }
+        .aspectRatio(wide ? 16.0 / 9.0 : 2.0 / 3.0, contentMode: .fit)
+    }
+}
+
+/// 竖版卡面（2:3）：剧集海报 → 视频帧缩略图 → 安静占位，三级回退都不出现文件名
+struct PosterArtwork: View {
+    @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
+    let item: MediaItem
+    var show: String? = nil
+    @State private var thumb: UIImage?
+
+    private var poster: UIImage? {
+        guard let show else { return nil }
+        return scrape.posterImage(for: show)
+    }
+
+    var body: some View {
+        ZStack {
+            QuietArtwork(seed: item.name)
+            if let poster {
+                Image(uiImage: poster)
+                    .resizable()
+                    .scaledToFill()
+            } else if let thumb {
+                Image(uiImage: thumb)
+                    .resizable()
+                    .scaledToFill()
+            }
+        }
+        .aspectRatio(2.0 / 3.0, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        )
+        .task(id: item.id) {
+            guard poster == nil else { return }
+            if let cached = ThumbnailStore.cached(for: item) {
+                thumb = cached
+            } else {
+                thumb = await ThumbnailStore.generate(for: item, store: store)
+            }
+        }
+    }
+}
+
+/// 横版卡面（16:9）：分集剧照 → 节目海报 → 安静占位
+struct WideArtwork: View {
+    @EnvironmentObject private var scrape: ScrapeStore
+    let item: MediaItem
+
+    private var image: UIImage? {
+        guard let info = EpisodeParser.parse(item.name) else { return nil }
+        if let still = scrape.stillImage(for: info.show, season: info.season, episode: info.episode) {
+            return still
+        }
+        return scrape.posterImage(for: info.show)
+    }
+
+    var body: some View {
+        ZStack {
+            QuietArtwork(seed: item.name, wide: true)
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            }
+        }
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+/// 评分角标（卡面右下角，深色胶囊白字）
+struct RatingBadge: View {
+    let rating: Double
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "star.fill")
+                .font(.system(size: 8, weight: .semibold))
+            Text(String(format: "%.1f", rating))
+                .font(.caption2.weight(.semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2.5)
+        .background(Capsule().fill(.black.opacity(0.62)))
+    }
+}
+
 struct MediaCell: View {
     @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
     let item: MediaItem
     var showName = false
     let onPlay: () -> Void
 
+    private var info: EpisodeParser.Info? { EpisodeParser.parse(item.name) }
+
+    private var rating: Double? {
+        guard let info else { return nil }
+        return scrape.meta(for: info.show)?.rating
+    }
+
+    /// 副信息：剧集按库内季数「共 N 季」（算不出季数退「共 N 集」），电影显示文件名年份
+    private var subtitleText: String {
+        if let info {
+            let episodes = store.items.filter { EpisodeParser.parse($0.name)?.show == info.show }
+            let seasons = Set(episodes.compactMap { EpisodeParser.parse($0.name)?.season }).count
+            if seasons > 0 { return String(localized: "共 \(seasons) 季") }
+            return String(localized: "共 \(episodes.count) 集")
+        }
+        if let year = CardText.year(in: item.name) { return year }
+        return item.captionText
+    }
+
     var body: some View {
         Button(action: onPlay) {
             VStack(alignment: .leading, spacing: 6) {
-                PosterView(item: item)
+                ZStack(alignment: .bottomTrailing) {
+                    PosterArtwork(item: item, show: info?.show)
+                    if let rating {
+                        RatingBadge(rating: rating)
+                            .padding(6)
+                    }
+                }
                 if let p = store.progressMap[item.id] {
                     ProgressBar(value: p)
                 }
                 if showName {
-                    Text(item.name)
+                    Text(CardText.title(for: item, scrape: scrape))
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                 }
-                Text(item.captionText)
+                Text(subtitleText)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -666,37 +905,33 @@ struct PosterView: View {
     }
 }
 
-/// 剧集卡（首页「剧集」分区）：优先用刮削到的官方海报
+/// 剧集卡（首页「剧集」分区）：刮削海报卡面 + 评分角标，副信息按库内季数显示
 struct SeriesCard: View {
     @EnvironmentObject private var scrape: ScrapeStore
     let show: String
-    let representative: MediaItem
-    let count: Int
+    let episodes: [MediaItem]
+
+    private var seasons: Int {
+        Set(episodes.compactMap { EpisodeParser.parse($0.name)?.season }).count
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let img = scrape.posterImage(for: show) {
-                Color.clear
-                    .aspectRatio(2.0 / 3.0, contentMode: .fit)
-                    .overlay {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFill()
-                    }
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            } else {
-                PosterView(item: representative)
+            ZStack(alignment: .bottomTrailing) {
+                PosterArtwork(item: episodes[0], show: show)
+                if let rating = scrape.meta(for: show)?.rating {
+                    RatingBadge(rating: rating)
+                        .padding(6)
+                }
             }
-            Text(show)
+            Text(scrape.meta(for: show)?.title ?? show)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
-            Text("共 \(count) 集")
+            Text(seasons > 0 ? String(localized: "共 \(seasons) 季") : String(localized: "共 \(episodes.count) 集"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
-        .frame(width: 110)
     }
 }
 
@@ -730,8 +965,8 @@ struct SeriesView: View {
         }
         .navigationTitle(show)
         .navigationBarTitleDisplayMode(.inline)
-        .playerCover(item: $activeItem) { item, context in
-            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
+        .fullScreenCover(item: $activeItem) { item in
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
         .task { scrape.ensureAll(items: store.items) }
     }
@@ -939,27 +1174,76 @@ struct MediaProgress: View {
     }
 }
 
+/// 继续观看卡（16:9）：剧照卡面 + 毛玻璃播放键 + 底部细进度线与时间，卡下两行显示名与分集行
 struct ContinueCard: View {
     @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
     let item: MediaItem
+    var width: CGFloat = 264
     let onPlay: () -> Void
+
+    private var progress: Double? { store.progressMap[item.id] }
+
+    /// 卡内右下时间：续播秒数与总时长都有时显示「28:04 / 1:01:11」，否则退百分比
+    private var timeText: String? {
+        guard let progress else { return nil }
+        if let position = ResumeStore.position(forKey: item.id.uuidString), progress > 0 {
+            return "\(CardText.clock(position)) / \(CardText.clock(position / progress))"
+        }
+        return String(localized: "已看 \(Int(progress * 100))%")
+    }
 
     var body: some View {
         Button(action: onPlay) {
-            VStack(alignment: .leading, spacing: 6) {
-                ZStack(alignment: .bottom) {
-                    PosterView(item: item, wide: true)
-                    if let p = store.progressMap[item.id] {
-                        ProgressBar(value: p, height: 4, onDarkBackground: true)
+            VStack(alignment: .leading, spacing: 7) {
+                ZStack {
+                    WideArtwork(item: item)
+                    // 卡面底部渐变：保证时间文本压在亮剧照上也可读
+                    LinearGradient(colors: [.clear, .black.opacity(0.45)],
+                                   startPoint: .center, endPoint: .bottom)
+                    // 毛玻璃圆底播放键
+                    ZStack {
+                        Circle().fill(.ultraThinMaterial)
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .offset(x: 1.5)
+                    }
+                    .frame(width: 46, height: 46)
+                    .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+                    if let timeText {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                Text(timeText)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
+                            }
+                        }
+                        .padding(.trailing, 8)
+                        .padding(.bottom, 8)
+                    }
+                    if let progress {
+                        VStack {
+                            Spacer()
+                            ProgressBar(value: progress, height: 3, onDarkBackground: true)
+                        }
                     }
                 }
-                if let p = store.progressMap[item.id] {
-                    Text("已看 \(Int(p * 100))%")
-                        .font(.caption2)
+                Text(CardText.title(for: item, scrape: scrape))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                if let line = CardText.episodeLine(for: item, scrape: scrape) ?? CardText.year(in: item.name) {
+                    Text(line)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
-            .frame(width: 232)
+            .frame(width: width)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("继续播放 \(item.name)")
@@ -979,6 +1263,89 @@ struct ProgressBar: View {
             }
         }
         .frame(height: height)
+    }
+}
+
+// MARK: - 分区全量页（分区标题「全部 · N ›」进入，与首页共用同一套卡片组件）
+
+struct LibraryItemsGridPage: View {
+    @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
+    let title: LocalizedStringKey
+    let items: [MediaItem]
+    @State private var activeItem: MediaItem?
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 170), spacing: 12)], spacing: 18) {
+                ForEach(items) { item in
+                    MediaCell(item: item, showName: true) { activeItem = item }
+                        .contextMenu {
+                            Button { activeItem = item } label: { Label("播放", systemImage: "play.fill") }
+                            Button(role: .destructive) { store.remove(item) } label: { Label("删除", systemImage: "trash") }
+                        }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 120)
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(item: $activeItem) { item in
+            PlaybackFlow(item: item, store: store, scrape: scrape)
+        }
+    }
+}
+
+struct LibrarySeriesGridPage: View {
+    let groups: [(show: String, episodes: [MediaItem])]
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 170), spacing: 12)], spacing: 18) {
+                ForEach(groups, id: \.show) { group in
+                    NavigationLink {
+                        SeriesView(show: group.show)
+                    } label: {
+                        SeriesCard(show: group.show, episodes: group.episodes)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 120)
+        }
+        .navigationTitle("剧集")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct LibraryContinueGridPage: View {
+    @EnvironmentObject private var store: LibraryStore
+    @EnvironmentObject private var scrape: ScrapeStore
+    let items: [MediaItem]
+    @State private var activeItem: MediaItem?
+
+    var body: some View {
+        GeometryReader { geo in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 20) {
+                    ForEach(items) { item in
+                        ContinueCard(item: item, width: geo.size.width - 32) { activeItem = item }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 120)
+            }
+        }
+        .navigationTitle("继续观看")
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(item: $activeItem) { item in
+            PlaybackFlow(item: item, store: store, scrape: scrape)
+        }
     }
 }
 
@@ -1013,8 +1380,8 @@ struct SearchView: View {
             .navigationTitle("搜索")
         }
         .searchable(text: $query, prompt: "搜索片名")
-        .playerCover(item: $activeItem) { item, context in
-            PlaybackFlow(item: item, store: store, scrape: scrape, orientationContext: context)
+        .fullScreenCover(item: $activeItem) { item in
+            PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
 }
@@ -1309,7 +1676,7 @@ struct PlaybackFlow: View {
 let item: MediaItem
 @ObservedObject var store: LibraryStore
 var scrape: ScrapeStore? = nil
-/// 呈现控制器的方向上下文（由 playerCover 注入）：模型判定写进来，呈现即按它定向
+/// 方向上下文：模型判定写进来（1.4 起呈现层不再消费，仅保留参数兼容）
 var orientationContext: PlaybackOrientationContext? = nil
 @StateObject private var avModel = PlayerModel()
 @StateObject private var mpvModel = MPVPlayerModel()
