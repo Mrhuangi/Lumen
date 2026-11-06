@@ -15,6 +15,17 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.3", date: "2026-11-06", items: [
+            Item(category: "修复", text: "内封中文字幕显示为方框：已内置完整中文字体，简体、繁体中文字幕正常显示"),
+            Item(category: "修复", text: "点开宽屏视频不自动横屏：现进入播放即按视频宽高定向，竖屏视频保持竖屏"),
+            Item(category: "修复", text: "音轨信息不完整：现标注编码、声道与全景声（如 E-AC3 · 5.1 · Atmos）"),
+            Item(category: "优化", text: "播放标题改为剧名与分集名，不再显示原始文件名"),
+            Item(category: "优化", text: "字幕菜单区分简体中文与繁体中文，并标注字幕格式（ASS / SRT / PGS 等）"),
+            Item(category: "修复", text: "看到结尾的视频再次打开会停在片尾：播完的剧集下次从头播放，未看完的照常续播"),
+            Item(category: "优化", text: "选择记忆更可靠：音轨、主副字幕组合、字号与倍速按剧集自动沿用"),
+            Item(category: "优化", text: "解码与渲染管线调优，长时间播放发热降低"),
+            Item(category: "修复", text: "导入文件或文件夹失败时没有任何提示：现会说明失败原因"),
+        ]),
         Entry(version: "1.2.1", date: "2026-11-05", items: [
             Item(category: "修复", text: "续播过的视频再次打开时黑屏、进度归零，现已修复：重播会从上次看到的位置继续"),
             Item(category: "修复", text: "小屏机型上播放界面两侧按钮被屏幕边缘裁切，现已修复：标题、关闭按钮与底部按钮完整显示"),
