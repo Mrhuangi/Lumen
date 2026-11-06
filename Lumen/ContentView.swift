@@ -303,7 +303,7 @@ struct LibraryView: View {
             allowsMultiple: true) { urls in
             guard let urls, !urls.isEmpty else { return }
             AppLog.add("导入", "选择器返回 \(urls.count) 个文件")
-            urls.forEach { _ = store.addFile($0) }
+            urls.forEach { _ = store.addFile(url: $0) }
             // 导入失败要真正弹错（M7）：store 记录了失败原因，视图层一直没人接
             if let error = store.lastImportError { importError = error }
         }
@@ -1108,7 +1108,7 @@ struct SourcesView: View {
             allowsMultiple: true) { urls in
             guard let urls, !urls.isEmpty else { return }
             AppLog.add("导入", "选择器返回 \(urls.count) 个文件")
-            urls.forEach { _ = store.addFile($0) }
+            urls.forEach { _ = store.addFile(url: $0) }
             if let error = store.lastImportError { importError = error }
         }
     }
