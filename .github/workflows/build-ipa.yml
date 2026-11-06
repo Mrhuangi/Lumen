@@ -118,6 +118,8 @@ jobs:
             xcrun simctl launch "$UDID" com.mrhuangi.lumen
             sleep 14
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG.png" || true
+            xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
+            sleep 1
             xcrun simctl launch "$UDID" com.mrhuangi.lumen -autoplayFirst || true
             sleep 6
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player.png" || true
