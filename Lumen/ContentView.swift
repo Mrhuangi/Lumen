@@ -360,6 +360,32 @@ struct LibraryView: View {
         Array(allRecentItems.prefix(10))
     }
 
+    /// 最近添加的一张卡：同一部剧的多集折叠成一张剧集卡（点进剧集页），单片保持条目卡（点开即播）
+    private struct RecentCard: Identifiable {
+        let id: String
+        let show: String?
+        let episodes: [MediaItem]
+        let item: MediaItem
+    }
+
+    private func groupedRecents(_ items: [MediaItem]) -> [RecentCard] {
+        var seenShows = Set<String>()
+        var cards: [RecentCard] = []
+        for item in items {
+            if let info = EpisodeParser.parse(item.name) {
+                guard seenShows.insert(info.show).inserted else { continue }
+                let episodes = store.items.filter { EpisodeParser.parse($0.name)?.show == info.show }
+                cards.append(RecentCard(id: "show:" + info.show, show: info.show, episodes: episodes, item: item))
+            } else {
+                cards.append(RecentCard(id: item.id.uuidString, show: nil, episodes: [item], item: item))
+            }
+        }
+        return cards
+    }
+
+    private var recentCards: [RecentCard] { groupedRecents(recentItems) }
+    private var allRecentCardCount: Int { groupedRecents(allRecentItems).count }
+
     private var homeBody: some View {
         GeometryReader { geo in
             ScrollView {
@@ -422,15 +448,26 @@ struct LibraryView: View {
 
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionHeader("最近添加", count: allRecentItems.count) {
+            sectionHeader("最近添加", count: allRecentCardCount) {
                 LibraryItemsGridPage(title: "最近添加", items: allRecentItems)
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 12) {
-                    ForEach(recentItems) { item in
-                        MediaCell(item: item, showName: true) { activeItem = item }
-                            .frame(width: 110)
-                            .contextMenu { mediaMenu(item) }
+                    ForEach(recentCards) { card in
+                        if let show = card.show {
+                            NavigationLink {
+                                SeriesView(show: show)
+                            } label: {
+                                SeriesCard(show: show, episodes: card.episodes)
+                                    .frame(width: 110)
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu { mediaMenu(card.item) }
+                        } else {
+                            MediaCell(item: card.item, showName: true) { activeItem = card.item }
+                                .frame(width: 110)
+                                .contextMenu { mediaMenu(card.item) }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -650,6 +687,15 @@ extension MediaItem {
 
 // MARK: - 卡片数据解析（显示名 / 分集行 / 年份：刮削优先，未刮削退清洗文件名）
 
+/// 季/集计数文案：英文单数单独成句，避免出现 "1 Seasons / 1 Episodes"
+func seasonCountText(_ seasons: Int) -> String {
+    seasons == 1 ? String(localized: "共 1 季") : String(localized: "共 \(seasons) 季")
+}
+
+func episodeCountText(_ count: Int) -> String {
+    count == 1 ? String(localized: "共 1 集") : String(localized: "共 \(count) 集")
+}
+
 enum CardText {
     /// 清洗文件名：去扩展名，点与下划线转空格
     static func cleaned(_ name: String) -> String {
@@ -808,16 +854,12 @@ struct RatingBadge: View {
     let rating: Double
 
     var body: some View {
-        HStack(spacing: 2) {
-            Image(systemName: "star.fill")
-                .font(.system(size: 8, weight: .semibold))
-            Text(String(format: "%.1f", rating))
-                .font(.caption2.weight(.semibold))
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2.5)
-        .background(Capsule().fill(.black.opacity(0.62)))
+        Text(String(format: "%.1f", rating))
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2.5)
+            .background(Capsule().fill(.black.opacity(0.62)))
     }
 }
 
@@ -840,8 +882,8 @@ struct MediaCell: View {
         if let info {
             let episodes = store.items.filter { EpisodeParser.parse($0.name)?.show == info.show }
             let seasons = Set(episodes.compactMap { EpisodeParser.parse($0.name)?.season }).count
-            if seasons > 0 { return String(localized: "共 \(seasons) 季") }
-            return String(localized: "共 \(episodes.count) 集")
+            if seasons > 0 { return seasonCountText(seasons) }
+            return episodeCountText(episodes.count)
         }
         if let year = CardText.year(in: item.name) { return year }
         return item.captionText
@@ -928,7 +970,7 @@ struct SeriesCard: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
-            Text(seasons > 0 ? String(localized: "共 \(seasons) 季") : String(localized: "共 \(episodes.count) 集"))
+            Text(seasons > 0 ? seasonCountText(seasons) : episodeCountText(episodes.count))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
