@@ -15,6 +15,14 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.4", date: "2026-11-06", items: [
+            Item(category: "修复", text: "横屏播放时画面被挤成窄条：播放页呈现方式已修正，横竖屏排版与视频画面完整贴合"),
+            Item(category: "修复", text: "横屏下字幕、音轨、选集面板撑满全屏：现只占下半屏，不再遮住整个画面"),
+            Item(category: "优化", text: "媒体库继续观看改用单集剧照卡：带播放键、已看时间与总时长，标题显示剧名与第几季第几集"),
+            Item(category: "优化", text: "最近添加与剧集改用海报卡：显示官方海报与评分角标，副标题显示季数或年份"),
+            Item(category: "新增", text: "每个分区新增「全部」入口，可查看该分区全部内容"),
+            Item(category: "修复", text: "媒体库底部内容被悬浮栏遮挡、继续观看左侧文字被裁切，现已修复"),
+        ]),
         Entry(version: "1.3", date: "2026-11-06", items: [
             Item(category: "修复", text: "内封中文字幕显示为方框：已内置完整中文字体，简体、繁体中文字幕正常显示"),
             Item(category: "修复", text: "点开宽屏视频不自动横屏：现进入播放即按视频宽高定向，竖屏视频保持竖屏"),
