@@ -69,6 +69,9 @@ enum OrientationHelper {
     /// 电平触发的当前裁决（每次判定到达/页面出现都可重复调用，结论一致）：
     /// 横屏视频 → 放行并请求横屏；竖屏视频 → 锁收回竖屏；未判定 → 仅放行等判定
     static func setPlaybackAspect(_ isLandscape: Bool?) {
+        let verdict = isLandscape.map { $0 ? "横屏" : "竖屏" } ?? "未判定"
+        let before = activeScene()?.interfaceOrientation.rawValue ?? -1
+        AppLog.add("播放", "方向裁决 \(verdict)（请求前界面方向 \(before)）")
         switch isLandscape {
         case true:
             AppDelegate.orientationLock = .allButUpsideDown
