@@ -87,21 +87,26 @@ final class MPVMetalViewController: UIViewController {
     }
 
     private var lastNotifiedPixelSize: CGSize = .zero
+    private var hasLoadedFile = false
 
-    /// 尺寸变了还要通知 mpv 重走一遍渲染配置：MPVKit 的 moltenvk 上下文
+    /// 尺寸变了还要让 mpv 重走一遍渲染配置：MPVKit 的 moltenvk 上下文
     /// 只在 reconfig 时读一次 layer.drawableSize 来定 swapchain 尺寸，
     /// 其 control 通道不产生任何 resize 事件——光改 layer 尺寸，
     /// swapchain 永远停在创建时的大小，画面照样是角落一条（#54 实测）。
-    /// 运行时设置 android-surface-size 会触发 VOCTRL_EXTERNAL_RESIZE
-    /// （mpv 源码 player/command.c 里的既定嵌入式尺寸通道），
-    /// gpu-next 收到后即 reconfig，moltenvk 此时重读 drawableSize 完成缩放。
+    /// mpv 的 VOCTRL_EXTERNAL_RESIZE 只连到 android-surface-size，
+    /// 该选项在非 Android 构建里根本不存在（#55 实测 property not found）。
+    /// 可靠的触发是切换一次视频轨：vid=no→auto 会走 uninit/reinit 视频链
+    /// （mpv 源码 player/loadfile.c 的 mp_switch_track_n），reinit 时
+    /// vo_reconfig → moltenvk_reconfig 重读 drawableSize 完成缩放；
+    /// 这也是 MPVKit 官方 Demo 用 vid 开关修前后台黑屏的同一机制。
+    /// 播放位置与暂停状态由 mpv 在轨切换时保留。
     private func notifyExternalResizeIfNeeded(_ pixelSize: CGSize) {
-        guard mpv != nil, pixelSize != lastNotifiedPixelSize,
+        guard mpv != nil, hasLoadedFile, pixelSize != lastNotifiedPixelSize,
               pixelSize.width > 1, pixelSize.height > 1 else { return }
         lastNotifiedPixelSize = pixelSize
-        let value = "\(Int(pixelSize.width))x\(Int(pixelSize.height))"
-        checkError(mpv_set_property_string(mpv, "android-surface-size", value),
-                   "set android-surface-size=\(value)")
+        mpv_set_property_string(mpv, "vid", "no")
+        mpv_set_property_string(mpv, "vid", "auto")
+        AppLog.add("播放", "尺寸变化触发视频链重初始化：\(Int(pixelSize.width))x\(Int(pixelSize.height))")
     }
 
     /// 旋转转场期间同步 layer 尺寸：等布局回调之外再补一手，
@@ -479,6 +484,7 @@ final class MPVMetalViewController: UIViewController {
                     delegate.propertyChange(mpv: handle, propertyName: propertyName, data: value)
                 }
             case MPV_EVENT_FILE_LOADED:
+                hasLoadedFile = true
                 forwardToDelegate { delegate, handle in delegate.mpvFileLoaded(mpv: handle) }
             case MPV_EVENT_END_FILE:
                 var reason: Int32 = 0
