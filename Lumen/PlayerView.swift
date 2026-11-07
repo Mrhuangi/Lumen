@@ -13,6 +13,13 @@ struct PlayerView: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
+    /// 与 MPVPlayerView 同规：尺寸跟随提议实时更新，避免旋转后视图帧停留在旧尺寸
+    func sizeThatFits(_ proposal: ProposedViewSize,
+                      uiViewController: AVPlayerViewController,
+                      context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         controller.player = player
