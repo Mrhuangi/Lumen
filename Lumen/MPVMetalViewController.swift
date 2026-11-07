@@ -59,9 +59,28 @@ final class MPVMetalViewController: UIViewController {
         }
     }
 
+    private var lastLoggedBounds: CGRect = .zero
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         metalLayer.frame = view.bounds
+        if view.bounds != lastLoggedBounds {
+            lastLoggedBounds = view.bounds
+            AppLog.add("播放", "播放视图布局 bounds \(Int(view.bounds.width))×\(Int(view.bounds.height))，drawable \(Int(metalLayer.drawableSize.width))×\(Int(metalLayer.drawableSize.height))")
+        }
+    }
+
+    /// 旋转转场期间同步 layer 尺寸：等布局回调之外再补一手，
+    /// 保证转场动画的每一帧 layer 都贴合目标尺寸（转场结束以实际 bounds 收尾）
+    override func viewWillTransition(to size: CGSize,
+                                     with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        AppLog.add("播放", "播放视图转场到 \(Int(size.width))×\(Int(size.height))")
+        coordinator.animate(alongsideTransition: { _ in
+            self.metalLayer.frame = CGRect(origin: .zero, size: size)
+        }, completion: { _ in
+            self.metalLayer.frame = self.view.bounds
+        })
     }
 
     // MARK: - mpv 初始化
