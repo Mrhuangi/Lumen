@@ -98,6 +98,18 @@ jobs:
           SIM_APP=$(find build-sim/Build/Products/Debug-iphonesimulator -maxdepth 1 -name "*.app" | head -n 1)
           echo "Simulator app: $SIM_APP"
           mkdir -p sim-evidence
+          # xcode-27 镜像自带工具链里没有 ffmpeg（#51/#52 实测 which 为空，
+          # 测试视频一直是 dummy 占位、从未真播过）。用 imageio-ffmpeg 的
+          # 静态二进制兜底，确保冒烟用的是真视频。
+          FFMPEG=""
+          if command -v ffmpeg >/dev/null 2>&1; then
+            FFMPEG=$(command -v ffmpeg)
+          else
+            pip3 install --break-system-packages --quiet imageio-ffmpeg || true
+            FFMPEG=$(python3 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())" 2>/dev/null || true)
+          fi
+          export FFMPEG
+          echo "ffmpeg resolved to: $FFMPEG"
           run_smoke() {
             UDID="$1"; SLUG="$2"
             echo "=== Smoke test: $SLUG ($UDID) ==="
@@ -107,13 +119,13 @@ jobs:
             DATA=$(xcrun simctl get_app_container "$UDID" com.mrhuangi.lumen data)
             echo "Data container: $DATA"
             mkdir -p "$DATA/Documents/Wednesday"
-            { which ffmpeg; ffmpeg -version 2>/dev/null | head -n 2; } > "sim-evidence/tools-$SLUG.txt" 2>&1 || true
+            { echo "ffmpeg=$FFMPEG"; "$FFMPEG" -version 2>/dev/null | head -n 2; } > "sim-evidence/tools-$SLUG.txt" 2>&1 || true
             gen_video() {
-              ffmpeg -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || \
-              ffmpeg -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v mpeg4 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || true
+              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || \
+              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v mpeg4 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || true
               ls -lh "$1" >> "sim-evidence/tools-$SLUG.txt" 2>&1 || true
             }
-            if command -v ffmpeg >/dev/null 2>&1; then
+            if [ -n "$FFMPEG" ]; then
               gen_video "$DATA/Documents/Wednesday/Wednesday.S02E02.2160p.WEB-DL.DDP5.1.mkv"
               gen_video "$DATA/Documents/Wednesday/Wednesday.S02E03.2160p.WEB-DL.DDP5.1.mkv"
             fi
