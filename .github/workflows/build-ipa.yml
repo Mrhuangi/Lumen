@@ -108,8 +108,8 @@ jobs:
             echo "Data container: $DATA"
             mkdir -p "$DATA/Documents/Wednesday"
             if command -v ffmpeg >/dev/null 2>&1; then
-              ffmpeg -y -v error -f lavfi -i testsrc2=duration=4:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=4 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$DATA/Documents/Wednesday/Wednesday.S02E02.2160p.WEB-DL.DDP5.1.mkv" || true
-              ffmpeg -y -v error -f lavfi -i testsrc2=duration=4:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=4 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$DATA/Documents/Wednesday/Wednesday.S02E03.2160p.WEB-DL.DDP5.1.mkv" || true
+              ffmpeg -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$DATA/Documents/Wednesday/Wednesday.S02E02.2160p.WEB-DL.DDP5.1.mkv" || true
+              ffmpeg -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$DATA/Documents/Wednesday/Wednesday.S02E03.2160p.WEB-DL.DDP5.1.mkv" || true
             fi
             if [ ! -s "$DATA/Documents/Wednesday/Wednesday.S02E02.2160p.WEB-DL.DDP5.1.mkv" ]; then
               printf 'dummy' > "$DATA/Documents/Wednesday/Wednesday.S02E02.2160p.WEB-DL.DDP5.1.mkv"
@@ -121,8 +121,10 @@ jobs:
             xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
             sleep 1
             xcrun simctl launch "$UDID" com.mrhuangi.lumen -autoplayFirst || true
-            sleep 6
+            sleep 10
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player.png" || true
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player2.png" || true
             find "$DATA/Documents" -type f > "sim-evidence/documents-$SLUG.txt" || true
             PREFS="$DATA/Library/Preferences/com.mrhuangi.lumen.plist"
             if [ -f "$PREFS" ]; then plutil -p "$PREFS" > "sim-evidence/preferences-$SLUG.txt" || true; fi
