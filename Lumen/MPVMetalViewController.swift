@@ -83,6 +83,25 @@ final class MPVMetalViewController: UIViewController {
         if metalLayer.drawableSize != pixelSize, pixelSize.width > 1, pixelSize.height > 1 {
             metalLayer.drawableSize = pixelSize
         }
+        notifyExternalResizeIfNeeded(pixelSize)
+    }
+
+    private var lastNotifiedPixelSize: CGSize = .zero
+
+    /// 尺寸变了还要通知 mpv 重走一遍渲染配置：MPVKit 的 moltenvk 上下文
+    /// 只在 reconfig 时读一次 layer.drawableSize 来定 swapchain 尺寸，
+    /// 其 control 通道不产生任何 resize 事件——光改 layer 尺寸，
+    /// swapchain 永远停在创建时的大小，画面照样是角落一条（#54 实测）。
+    /// 运行时设置 android-surface-size 会触发 VOCTRL_EXTERNAL_RESIZE
+    /// （mpv 源码 player/command.c 里的既定嵌入式尺寸通道），
+    /// gpu-next 收到后即 reconfig，moltenvk 此时重读 drawableSize 完成缩放。
+    private func notifyExternalResizeIfNeeded(_ pixelSize: CGSize) {
+        guard mpv != nil, pixelSize != lastNotifiedPixelSize,
+              pixelSize.width > 1, pixelSize.height > 1 else { return }
+        lastNotifiedPixelSize = pixelSize
+        let value = "\(Int(pixelSize.width))x\(Int(pixelSize.height))"
+        checkError(mpv_set_property_string(mpv, "android-surface-size", value),
+                   "set android-surface-size=\(value)")
     }
 
     /// 旋转转场期间同步 layer 尺寸：等布局回调之外再补一手，
