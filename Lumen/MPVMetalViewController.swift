@@ -63,10 +63,25 @@ final class MPVMetalViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        metalLayer.frame = view.bounds
+        syncMetalLayerSize()
         if view.bounds != lastLoggedBounds {
             lastLoggedBounds = view.bounds
-            AppLog.add("播放", "播放视图布局 bounds \(Int(view.bounds.width))×\(Int(view.bounds.height))，drawable \(Int(metalLayer.drawableSize.width))×\(Int(metalLayer.drawableSize.height))")
+            AppLog.add("播放", "播放视图布局 bounds \(Int(view.bounds.width))×\(Int(view.bounds.height))，layer \(Int(metalLayer.frame.width))×\(Int(metalLayer.frame.height))，drawable \(Int(metalLayer.drawableSize.width))×\(Int(metalLayer.drawableSize.height))")
+        }
+    }
+
+    /// layer 尺寸同步：改 frame 之外必须显式同步 drawableSize。
+    /// CAMetalLayer 按像素 1:1 呈现 drawable、不会拉伸到 layer 大小；
+    /// 而 MoltenVK 建 swapchain 时显式设过一次 drawableSize 后，系统便不再
+    /// 按 bounds 自动更新它——旋转后只改 frame，渲染画布会永远停在初始
+    /// （竖屏）像素尺寸，画面只剩角落一条（1.4.1 模拟器真播放实测根因）。
+    private func syncMetalLayerSize() {
+        metalLayer.frame = view.bounds
+        let scale = metalLayer.contentsScale
+        let pixelSize = CGSize(width: view.bounds.width * scale,
+                               height: view.bounds.height * scale)
+        if metalLayer.drawableSize != pixelSize, pixelSize.width > 1, pixelSize.height > 1 {
+            metalLayer.drawableSize = pixelSize
         }
     }
 
@@ -78,8 +93,13 @@ final class MPVMetalViewController: UIViewController {
         AppLog.add("播放", "播放视图转场到 \(Int(size.width))×\(Int(size.height))")
         coordinator.animate(alongsideTransition: { _ in
             self.metalLayer.frame = CGRect(origin: .zero, size: size)
+            let scale = self.metalLayer.contentsScale
+            let pixelSize = CGSize(width: size.width * scale, height: size.height * scale)
+            if pixelSize.width > 1, pixelSize.height > 1 {
+                self.metalLayer.drawableSize = pixelSize
+            }
         }, completion: { _ in
-            self.metalLayer.frame = self.view.bounds
+            self.syncMetalLayerSize()
         })
     }
 
