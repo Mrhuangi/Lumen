@@ -15,6 +15,9 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.4.1", date: "2026-11-07", items: [
+            Item(category: "修复", text: "横屏播放时画面被挤成窄条：已定位根因——视频视图的尺寸停留在打开时的竖屏大小、未随旋转更新；现已根治，横屏视频全屏铺满"),
+        ]),
         Entry(version: "1.4", date: "2026-11-06", items: [
             Item(category: "修复", text: "横屏播放时画面被挤成窄条：播放页呈现方式已修正，横竖屏排版与视频画面完整贴合"),
             Item(category: "修复", text: "横屏下字幕、音轨、选集面板撑满全屏：现只占下半屏，不再遮住整个画面"),
