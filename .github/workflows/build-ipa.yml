@@ -121,8 +121,9 @@ jobs:
             mkdir -p "$DATA/Documents/Wednesday"
             { echo "ffmpeg=$FFMPEG"; "$FFMPEG" -version 2>/dev/null | head -n 2; } > "sim-evidence/tools-$SLUG.txt" 2>&1 || true
             gen_video() {
-              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || \
-              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -c:v mpeg4 -pix_fmt yuv420p -c:a aac -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || true
+              printf '1\n00:00:01,000 --> 00:00:12,000\nGATE SUBTITLE TEST\n\n2\n00:00:13,000 --> 00:00:25,000\nGATE SUBTITLE TEST\n' > "$DATA/Documents/Wednesday/gate.srt"
+              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -i "$DATA/Documents/Wednesday/gate.srt" -map 0:v -map 1:a -map 2:s -c:v libx264 -pix_fmt yuv420p -c:a aac -c:s srt -metadata:s:s:0 language=chi -metadata:s:s:0 title="简体中字" -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || \
+              "$FFMPEG" -y -v error -f lavfi -i testsrc2=duration=30:size=1280x720:rate=30 -f lavfi -i sine=frequency=440:duration=30 -i "$DATA/Documents/Wednesday/gate.srt" -map 0:v -map 1:a -map 2:s -c:v mpeg4 -pix_fmt yuv420p -c:a aac -c:s srt -metadata:s:s:0 language=chi -metadata:s:s:0 title="简体中字" -shortest "$1" 2>>"sim-evidence/ffmpeg-$SLUG.log" || true
               ls -lh "$1" >> "sim-evidence/tools-$SLUG.txt" 2>&1 || true
             }
             if [ -n "$FFMPEG" ]; then
@@ -143,6 +144,18 @@ jobs:
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player.png" || true
             sleep 5
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player2.png" || true
+            for PANEL in subtitle audio episodes settings; do
+              xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
+              sleep 1
+              xcrun simctl launch "$UDID" com.mrhuangi.lumen -autoplayFirst -smokePanel "$PANEL" || true
+              sleep 16
+              xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-panel-$PANEL.png" || true
+            done
+            xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
+            sleep 1
+            xcrun simctl launch "$UDID" com.mrhuangi.lumen -autoplayFirst -smokeBgCycle || true
+            sleep 22
+            xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-bgcycle.png" || true
             find "$DATA/Documents" -type f > "sim-evidence/documents-$SLUG.txt" || true
             PREFS="$DATA/Library/Preferences/com.mrhuangi.lumen.plist"
             if [ -f "$PREFS" ]; then plutil -p "$PREFS" > "sim-evidence/preferences-$SLUG.txt" || true; fi
