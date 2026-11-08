@@ -5,6 +5,7 @@ import Foundation
 
 enum PlayerSettings {
     static let nativeModeKey = "settings.nativeMode"
+    static let liquidGlassKey = "settings.liquidGlass"
     static let skipKey = "settings.skipIntroOutro"
     static let introSecondsKey = "settings.skipIntroSeconds"
     static let outroSecondsKey = "settings.skipOutroSeconds"
