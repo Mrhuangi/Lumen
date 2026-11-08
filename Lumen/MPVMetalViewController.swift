@@ -53,6 +53,22 @@ final class MPVMetalViewController: UIViewController {
         setupMpv()
         setupNotifications()
 
+        // 模拟器门禁钩子（仅启动参数触发）：文件加载后走一遍真实的前后台处理函数，
+        // 供工作流截图核对回前台后的画面与方向（验的是处理函数本身，系统通知投递不在此验）
+        if ProcessInfo.processInfo.arguments.contains("-smokeBgCycle") {
+            Task { [weak self] in
+                guard let self else { return }
+                for _ in 0..<40 where !self.hasLoadedFile {
+                    try? await Task.sleep(for: .milliseconds(500))
+                }
+                guard self.hasLoadedFile else { return }
+                try? await Task.sleep(for: .seconds(3))
+                self.enterBackground()
+                try? await Task.sleep(for: .seconds(2))
+                self.enterForeground()
+            }
+        }
+
         if let pending = pendingLoad {
             pendingLoad = nil
             loadFile(pending)
@@ -104,9 +120,31 @@ final class MPVMetalViewController: UIViewController {
         guard mpv != nil, hasLoadedFile, pixelSize != lastNotifiedPixelSize,
               pixelSize.width > 1, pixelSize.height > 1 else { return }
         lastNotifiedPixelSize = pixelSize
+        AppLog.add("播放", "尺寸变化触发视频链重初始化：\(Int(pixelSize.width))x\(Int(pixelSize.height))")
+        requestVideoChainReinit()
+    }
+
+    private var lastChainReinitAt: Date = .distantPast
+    private var chainReinitPending = false
+
+    /// 视频链重初始化的唯一入口（尺寸变化与回前台共用，合流防互踩）：
+    /// vid=no→auto 触发 uninit/reinit，reconfig 时引擎重读 drawableSize。
+    /// 0.8 秒内的重复请求合流为最后一次，避免旋转动画与前台恢复叠出两次重建。
+    private func requestVideoChainReinit() {
+        guard mpv != nil, hasLoadedFile else { return }
+        if Date().timeIntervalSince(lastChainReinitAt) < 0.8 {
+            guard !chainReinitPending else { return }
+            chainReinitPending = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                guard let self, self.chainReinitPending else { return }
+                self.chainReinitPending = false
+                self.requestVideoChainReinit()
+            }
+            return
+        }
+        lastChainReinitAt = Date()
         mpv_set_property_string(mpv, "vid", "no")
         mpv_set_property_string(mpv, "vid", "auto")
-        AppLog.add("播放", "尺寸变化触发视频链重初始化：\(Int(pixelSize.width))x\(Int(pixelSize.height))")
     }
 
     /// 旋转转场期间同步 layer 尺寸：等布局回调之外再补一手，
@@ -235,7 +273,11 @@ final class MPVMetalViewController: UIViewController {
 
     @objc private func enterForeground() {
         guard mpv != nil else { return }
-        checkError(mpv_set_property_string(mpv, "vid", "auto"), "vid=auto")
+        if hasLoadedFile {
+            requestVideoChainReinit()
+        } else {
+            checkError(mpv_set_property_string(mpv, "vid", "auto"), "vid=auto")
+        }
         if wasPlayingBeforeBackground { play() }
     }
 
