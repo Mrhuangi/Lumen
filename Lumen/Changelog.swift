@@ -15,6 +15,15 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5", date: "2026-11-08", items: [
+            Item(category: "修复", text: "横屏下字幕、音轨、选集面板点开看不见：已根治"),
+            Item(category: "修复", text: "从后台回到应用后视频方向停留在横屏：已修复"),
+            Item(category: "修复", text: "观看几分钟后屏幕自动熄灭：播放中保持常亮，暂停或退出后恢复系统设置"),
+            Item(category: "新增", text: "播放页顶栏显示当前时间与电量"),
+            Item(category: "新增", text: "播放页新增翻转与方向锁定按钮"),
+            Item(category: "新增", text: "设置中可关闭液态玻璃，改用经典磨砂效果"),
+            Item(category: "优化", text: "内部结构全面整理：同类功能合并为单一实现，运行更稳"),
+        ]),
         Entry(version: "1.4.1", date: "2026-11-07", items: [
             Item(category: "修复", text: "横屏播放时画面被挤成窄条：已定位根因——视频视图的尺寸停留在打开时的竖屏大小、未随旋转更新；现已根治，横屏视频全屏铺满"),
         ]),
