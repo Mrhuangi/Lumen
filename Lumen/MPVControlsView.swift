@@ -30,6 +30,11 @@ struct MPVControlsView: View {
 
     @AppStorage(PlayerSettings.showPrevNextKey) private var showPrevNextButtons = true
     @AppStorage(PlayerSettings.showSeekButtonsKey) private var showSeekButtons = true
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// 横屏判定（与面板内部信号一致）：竖向尺寸类 compact 时系统 sheet 会忽略 detents、
+    /// 直接全屏——横屏面板改走底部浮层（见 landscapePanelLayer），竖屏仍用 sheet。
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     @State private var scrubValue: Double?
     @State private var scrubStartPosition: Double?
@@ -79,6 +84,9 @@ struct MPVControlsView: View {
                     outroButton(wide: wide)
                 }
                 bottomStack(wide: wide, insets: geo.safeAreaInsets)
+                if geo.size.width > geo.size.height {
+                    landscapePanelLayer(height: geo.size.height * 0.62)
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -100,22 +108,64 @@ struct MPVControlsView: View {
             if activeBubble == nil { poke() }
         }
         .task { await runSmokeHooksIfNeeded() }
-        .sheet(isPresented: $showSubtitlePanel) {
+        .sheet(isPresented: Binding(get: { showSubtitlePanel && !isLandscape }, set: { showSubtitlePanel = $0 })) {
             SubtitlePanelView(model: model, onLoadLocalSubtitle: onLoadLocalSubtitle)
         }
-        .sheet(isPresented: $showMoreSettings) {
+        .sheet(isPresented: Binding(get: { showMoreSettings && !isLandscape }, set: { showMoreSettings = $0 })) {
             PlayerMoreSettingsView()
         }
-        .sheet(isPresented: $showEpisodes) {
+        .sheet(isPresented: Binding(get: { showEpisodes && !isLandscape }, set: { showEpisodes = $0 })) {
             EpisodePanelView(episodes: episodes, currentID: currentEpisodeID,
                              stillProvider: stillProvider) { item in
                 showEpisodes = false
                 onSelectEpisode(item)
             }
         }
-        .sheet(isPresented: $showAudioPanel) {
+        .sheet(isPresented: Binding(get: { showAudioPanel && !isLandscape }, set: { showAudioPanel = $0 })) {
             AudioPanelView(model: model)
         }
+    }
+
+    /// 打开面板的统一入口：音轨/字幕面板先刷一次轨道信息（选中轨 profile 这时多半已可读，
+    /// 全景声标注与列表内容追上），再打开面板——避免开屏瞬间列表为空（1.5 门禁实测）。
+    private func openSubtitlePanel() { model.refreshTrackInfoForMenu(); openSubtitlePanel() }
+    private func openAudioPanel() { model.refreshTrackInfoForMenu(); openAudioPanel() }
+    private func openEpisodesPanel() { openEpisodesPanel() }
+    private func openSettingsPanel() { openSettingsPanel() }
+
+    /// 横屏面板浮层（底部 0.62 高）：iPhone 横屏时系统 sheet 忽略 detents、直接全屏，
+    /// 故横屏改走自绘底部浮层；竖屏继续用 sheet。面板内容与 sheet 共用同一视图，
+    /// 关闭经 onDone 回到本视图的 show 标志。
+    @ViewBuilder
+    private var landscapePanel: some View {
+        if showSubtitlePanel {
+            SubtitlePanelView(model: model, onLoadLocalSubtitle: onLoadLocalSubtitle,
+                              onDone: { showSubtitlePanel = false })
+        } else if showAudioPanel {
+            AudioPanelView(model: model, onDone: { showAudioPanel = false })
+        } else if showEpisodes {
+            EpisodePanelView(episodes: episodes, currentID: currentEpisodeID,
+                             stillProvider: stillProvider,
+                             onDone: { showEpisodes = false }) { item in
+                showEpisodes = false
+                onSelectEpisode(item)
+            }
+        } else if showMoreSettings {
+            PlayerMoreSettingsView(onDone: { showMoreSettings = false })
+        }
+    }
+
+    /// 横屏浮层容器：底部对齐、0.62 高、圆角＋系统底色；无面板打开时为空视图、不挡触摸。
+    private func landscapePanelLayer(height: CGFloat) -> some View {
+        landscapePanel
+            .frame(height: height, alignment: .top)
+            .frame(maxWidth: .infinity)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 24, y: -6)
+            .transition(.move(edge: .bottom))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .animation(.snappy, value: panelOpen)
     }
 
     private func syncSuspended() {
@@ -241,10 +291,10 @@ struct MPVControlsView: View {
         guard let idx = args.firstIndex(of: "-smokePanel"), idx + 1 < args.count else { return }
         try? await Task.sleep(for: .seconds(6))
         switch args[idx + 1] {
-        case "subtitle": showSubtitlePanel = true
-        case "audio": showAudioPanel = true
-        case "episodes": showEpisodes = true
-        case "settings": showMoreSettings = true
+        case "subtitle": openSubtitlePanel()
+        case "audio": openAudioPanel()
+        case "episodes": openEpisodesPanel()
+        case "settings": openSettingsPanel()
         default: break
         }
     }
@@ -367,12 +417,12 @@ struct MPVControlsView: View {
             rateButton
             if !model.chapters.isEmpty { chaptersButton }
             Spacer(minLength: 8)
-            glyphButton("captions.bubble.fill", label: "字幕") { showSubtitlePanel = true }
+            glyphButton("captions.bubble.fill", label: "字幕") { openSubtitlePanel() }
             audioButton
             if episodes.count > 1 {
-                glyphButton("list.bullet", label: "选集") { showEpisodes = true }
+                glyphButton("list.bullet", label: "选集") { openEpisodesPanel() }
             }
-            glyphButton("ellipsis.circle", label: "更多设置") { showMoreSettings = true }
+            glyphButton("ellipsis.circle", label: "更多设置") { openSettingsPanel() }
         }
         .frame(height: 44)
     }
@@ -394,7 +444,7 @@ struct MPVControlsView: View {
                 .shadow(color: .black.opacity(0.45), radius: 4, y: 1)
                 .frame(minWidth: 40, alignment: .trailing)
             glyphButton("captions.bubble.fill", glyph: 18, hitWidth: 40, label: "字幕") {
-                showSubtitlePanel = true
+                openSubtitlePanel()
             }
             audioButtonCompact
             moreButtonCompact
@@ -461,7 +511,7 @@ struct MPVControlsView: View {
     @ViewBuilder
     private var audioButton: some View {
         if model.audioTracks.count > 10 {
-            glyphButton("waveform", label: "音轨") { showAudioPanel = true }
+            glyphButton("waveform", label: "音轨") { openAudioPanel() }
         } else {
             audioBubbleButton
         }
@@ -470,7 +520,7 @@ struct MPVControlsView: View {
     @ViewBuilder
     private var audioButtonCompact: some View {
         if model.audioTracks.count > 10 {
-            glyphButton("waveform", glyph: 18, hitWidth: 40, label: "音轨") { showAudioPanel = true }
+            glyphButton("waveform", glyph: 18, hitWidth: 40, label: "音轨") { openAudioPanel() }
         } else {
             audioBubbleButtonCompact
         }
@@ -653,7 +703,7 @@ struct MPVControlsView: View {
             if episodes.count > 1 {
                 Button {
                     activeBubble = nil
-                    showEpisodes = true
+                    openEpisodesPanel()
                 } label: {
                     HStack(spacing: 8) {
                         Text("选集").foregroundStyle(.primary)
@@ -691,7 +741,7 @@ struct MPVControlsView: View {
             }
             Button {
                 activeBubble = nil
-                showMoreSettings = true
+                openSettingsPanel()
             } label: {
                 HStack(spacing: 8) {
                     Text("更多设置").foregroundStyle(.primary)
@@ -1041,6 +1091,7 @@ extension View {
 struct SubtitlePanelView: View {
     @ObservedObject var model: MPVPlayerModel
     let onLoadLocalSubtitle: () -> Void
+    var onDone: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @AppStorage(PlayerSettings.mpvSubtitleFontSizeKey) private var fontSize: Int = 55
     @State private var tab: Tab = .primary
@@ -1050,6 +1101,10 @@ struct SubtitlePanelView: View {
 
     /// 横屏判定：竖向尺寸类 compact 即窗口矮（iPhone 横屏），此时面板必须限高
     private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 关闭面板：浮层模式经 onDone 回到父视图的 show 标志；sheet 模式走系统 dismiss。
+    private func dismissPanel() {
+        if let onDone { onDone() } else { dismiss() }
+    }
 
     var body: some View {
         NavigationStack {
@@ -1061,7 +1116,7 @@ struct SubtitlePanelView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("完成") { dismissPanel() }
                 }
             }
         }
@@ -1122,7 +1177,7 @@ struct SubtitlePanelView: View {
                 }
                 Section {
                     Button {
-                        dismiss()
+                        dismissPanel()
                         onLoadLocalSubtitle()
                     } label: {
                         Label("加载本地字幕", systemImage: "doc.badge.plus")
@@ -1270,11 +1325,16 @@ struct SubtitlePanelView: View {
 
 struct AudioPanelView: View {
     @ObservedObject var model: MPVPlayerModel
+    var onDone: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     /// 横屏判定与限高规则同字幕面板（见 PanelDetents）；竖屏默认档保持原规则 .large
     private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 关闭面板：浮层模式经 onDone 回到父视图的 show 标志；sheet 模式走系统 dismiss。
+    private func dismissPanel() {
+        if let onDone { onDone() } else { dismiss() }
+    }
 
     var body: some View {
         NavigationStack {
@@ -1282,7 +1342,7 @@ struct AudioPanelView: View {
                 ForEach(model.audioTracks) { track in
                     Button {
                         model.selectAudioTrack(track.id)
-                        dismiss()
+                        dismissPanel()
                     } label: {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 3) {
@@ -1317,7 +1377,7 @@ struct AudioPanelView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("完成") { dismissPanel() }
                 }
             }
         }
@@ -1334,18 +1394,23 @@ struct EpisodePanelView: View {
     let currentID: UUID
     let stillProvider: (MediaItem) -> UIImage?
     let onSelect: (MediaItem) -> Void
+    var onDone: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     /// 横屏判定与限高规则同字幕面板（见 PanelDetents）
     private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 关闭面板：浮层模式经 onDone 回到父视图的 show 标志；sheet 模式走系统 dismiss。
+    private func dismissPanel() {
+        if let onDone { onDone() } else { dismiss() }
+    }
 
     var body: some View {
         NavigationStack {
             List(episodes) { item in
                 Button {
                     onSelect(item)
-                    dismiss()
+                    dismissPanel()
                 } label: {
                     HStack(spacing: 12) {
                         Group {
@@ -1384,7 +1449,7 @@ struct EpisodePanelView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("完成") { dismissPanel() }
                 }
             }
         }
@@ -1398,10 +1463,15 @@ struct EpisodePanelView: View {
 
 struct PlayerMoreSettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    var onDone: (() -> Void)? = nil
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     /// 横屏判定与限高规则同字幕面板（见 PanelDetents）
     private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// 关闭面板：浮层模式经 onDone 回到父视图的 show 标志；sheet 模式走系统 dismiss。
+    private func dismissPanel() {
+        if let onDone { onDone() } else { dismiss() }
+    }
     @AppStorage(PlayerSettings.nativeModeKey) private var nativeMode = false
     @AppStorage(PlayerSettings.skipKey) private var skipIntroOutro = false
     @AppStorage(PlayerSettings.introSecondsKey) private var introSeconds: Double = 90
@@ -1445,7 +1515,7 @@ struct PlayerMoreSettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("完成") { dismissPanel() }
                 }
             }
         }
