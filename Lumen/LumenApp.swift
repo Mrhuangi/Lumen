@@ -31,21 +31,6 @@ struct LumenApp: App {
     }
 }
 
-// MARK: - 播放方向上下文（保留作参数兼容）
-
-/// 播放会话的方向裁决通道：PlaybackFlow 把当前视频的横竖判定写进来。
-/// 1.4 起呈现层不再消费此上下文，PlaybackFlow 的参数仅保留兼容、写入无副作用；
-/// 方向改由 OrientationHelper 的 geometry 请求＋AppDelegate 全局锁驱动。
-final class PlaybackOrientationContext {
-    var aspectLandscape: Bool? {
-        didSet {
-            guard oldValue != aspectLandscape else { return }
-            onAspectChanged?()
-        }
-    }
-    var onAspectChanged: (() -> Void)?
-}
-
 /// 方向控制：改锁后通知系统重新评估，并可直接请求转到目标方向。
 /// 1.3 纪律（据 landscape 调研）：请求一律带 errorHandler 并写 AppLog，不再静默；
 /// setNeeds 同时打根控制器与顶层呈现控制器，且严格先于 geometry 请求；
@@ -83,6 +68,30 @@ enum OrientationHelper {
             AppDelegate.orientationLock = .allButUpsideDown
             refresh()
         }
+    }
+
+    /// 手动翻转：把当前横屏翻到另一侧；竖屏时转入横屏（用户 2026-11-07 追加）。
+    /// 只发几何请求、不改裁决：后续裁决重申用的是 .landscape 宽掩码，包含当前侧，
+    /// 不会把翻转打回去；新视频裁决变化时方向仍跟新裁决走。
+    static func flipLandscape() {
+        AppDelegate.orientationLock = .allButUpsideDown
+        let current = activeScene()?.interfaceOrientation ?? .portrait
+        let target: UIInterfaceOrientationMask = current == .landscapeLeft ? .landscapeRight : .landscapeLeft
+        AppLog.add("播放", "手动翻转（当前方向 \(current.rawValue)）")
+        request(target, verify: true)
+    }
+
+    /// 方向锁定：锁定→只允许当前方向，自动裁决不再改向；解锁→恢复播放放行，
+    /// 裁决重申由调用方随后触发。
+    static func setOrientationLocked(_ locked: Bool) {
+        if locked {
+            let current = activeScene()?.interfaceOrientation ?? .portrait
+            AppDelegate.orientationLock = UIInterfaceOrientationMask(rawValue: UInt(1 << current.rawValue))
+        } else {
+            AppDelegate.orientationLock = .allButUpsideDown
+        }
+        refresh()
+        AppLog.add("播放", "方向锁定 \(locked ? "开" : "关")")
     }
 
     private static var verifyRetryPending = false
