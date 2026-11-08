@@ -15,6 +15,10 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5.1", date: "2026-11-09", items: [
+            Item(category: "修复", text: "横屏下面板仍占满全屏：现改为底部半屏浮层，画面上半部分保持可见"),
+            Item(category: "修复", text: "打开面板过快时音轨或字幕列表可能为空：打开面板前先刷新轨道信息"),
+        ]),
         Entry(version: "1.5", date: "2026-11-08", items: [
             Item(category: "修复", text: "横屏下字幕、音轨、选集面板点开看不见：已根治"),
             Item(category: "修复", text: "从后台回到应用后视频方向停留在横屏：已修复"),
