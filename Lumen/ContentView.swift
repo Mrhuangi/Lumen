@@ -1546,6 +1546,7 @@ struct SettingsView: View {
     @EnvironmentObject private var store: LibraryStore
     @Environment(\.dismiss) private var dismiss
     @AppStorage("appearance.mode") private var appearanceRaw = AppearanceMode.system.rawValue
+    @AppStorage(PlayerSettings.liquidGlassKey) private var liquidGlass = true
     @AppStorage("settings.autoResume") private var autoResume = true
     @AppStorage("settings.autoNext") private var autoNext = true
     @AppStorage("settings.autoPiP") private var autoPiP = true
@@ -1569,6 +1570,7 @@ struct SettingsView: View {
                         ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
                             Text(mode.label).tag(mode.rawValue)
                         }
+                    Toggle("液态玻璃", isOn: $liquidGlass)
                     }
                     .pickerStyle(.segmented)
                     Text("播放器界面始终为深色，不受此设置影响。")
@@ -1718,8 +1720,6 @@ struct PlaybackFlow: View {
 let item: MediaItem
 @ObservedObject var store: LibraryStore
 var scrape: ScrapeStore? = nil
-/// 方向上下文：模型判定写进来（1.4 起呈现层不再消费，仅保留参数兼容）
-var orientationContext: PlaybackOrientationContext? = nil
 @StateObject private var avModel = PlayerModel()
 @StateObject private var mpvModel = MPVPlayerModel()
 @Environment(\.dismiss) private var dismiss
@@ -1737,12 +1737,10 @@ var orientationContext: PlaybackOrientationContext? = nil
 @State private var notice: String?
 @State private var remuxer: FFmpegRemuxer?
 
-init(item: MediaItem, store: LibraryStore, scrape: ScrapeStore? = nil,
-orientationContext: PlaybackOrientationContext? = nil) {
+init(item: MediaItem, store: LibraryStore, scrape: ScrapeStore? = nil) {
 self.item = item
 self.store = store
 self.scrape = scrape
-self.orientationContext = orientationContext
 _currentItem = State(initialValue: item)
 }
 
@@ -1792,7 +1790,6 @@ subtitleOptionsToken: subtitleOptionsToken,
 episodes: episodes,
 currentEpisodeID: currentItem.id,
 stillProvider: stillImage(for:),
-orientationContext: orientationContext,
 avModel: avModel, mpvModel: mpvModel,
 onClose: { dismiss()},
 onSelectEpisode: { switchToEpisode($0)},
@@ -1832,6 +1829,7 @@ mpvModel.stop()
 store.stopAccessing(for: currentItem)
 store.refreshProgress()
 OrientationHelper.lockToPortrait()
+UIApplication.shared.isIdleTimerDisabled = false
 }
 .onChange(of: nativeMode) { _, newValue in
 // 在播放器更多设置或设置页切换模式：当前视频按新模式重新载入
@@ -1878,7 +1876,7 @@ Text("正在准备…")
 }
 }
 .padding(28)
-.glassEffect(.regular, in:.rect(cornerRadius: 24))
+.chromeGlass(in: .rect(cornerRadius: 24))
 .padding(.horizontal, 32)
 }
 
@@ -2036,6 +2034,41 @@ break
 // 拖动进度或打开面板时暂停计时（chromeSuspended）；暂停时保持显示；
 // 报错/提示出现时强制唤出，提示 4 秒后自动消失、报错随控件一同隐去。
 
+/// 设备状态（电量）：开启电量监测并订阅变化通知，供播放页状态簇显示当前电量。
+@MainActor
+private final class DeviceStatus: ObservableObject {
+    @Published private(set) var batteryLevel: Float
+    @Published private(set) var batteryState: UIDevice.BatteryState
+
+    init() {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        batteryLevel = UIDevice.current.batteryLevel
+        batteryState = UIDevice.current.batteryState
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(refresh),
+                           name: UIDevice.batteryLevelDidChangeNotification, object: nil)
+        center.addObserver(self, selector: #selector(refresh),
+                           name: UIDevice.batteryStateDidChangeNotification, object: nil)
+    }
+
+    @objc private func refresh() {
+        batteryLevel = UIDevice.current.batteryLevel
+        batteryState = UIDevice.current.batteryState
+    }
+
+    var batterySymbol: String {
+        switch batteryLevel {
+        case 0.875...: return "battery.100"
+        case 0.625..<0.875: return "battery.75"
+        case 0.375..<0.625: return "battery.50"
+        case 0.125..<0.375: return "battery.25"
+        default: return "battery.0"
+        }
+    }
+
+    var isCharging: Bool { batteryState == .charging || batteryState == .full }
+}
+
 struct PlayerScreen: View {
 let engine: PlaybackEngine
 let title: String
@@ -2048,8 +2081,6 @@ var subtitleOptionsToken: Int = 0
 var episodes: [MediaItem] = []
 var currentEpisodeID: UUID
 var stillProvider: (MediaItem) -> UIImage? = { _ in nil}
-/// 呈现控制器的方向上下文：判定到达时同步写一份，呈现层与请求层双保险
-var orientationContext: PlaybackOrientationContext? = nil
 @ObservedObject var avModel: PlayerModel
 @ObservedObject var mpvModel: MPVPlayerModel
 let onClose: () -> Void
@@ -2058,6 +2089,9 @@ let onPrevious: (() -> Void)?
 let onNext: (() -> Void)?
 let onLoadLocalSubtitle: () -> Void
 
+@StateObject private var deviceStatus = DeviceStatus()
+@State private var orientationLocked = false
+@Environment(\.scenePhase) private var scenePhase
 @State private var controlsVisible = true
 @State private var interactionSeed = 0
 @State private var chromeSuspended = false
@@ -2130,6 +2164,9 @@ interactionSeed &+= 1
 }
 .onChange(of: activePaused) { _, paused in
 if paused { controlsVisible = true}
+// 播放中保持屏幕常亮，暂停即恢复系统自动锁屏（此前从未禁用闲置计时器，
+// 看几分钟就按系统设置熄屏——用户 2026-11-07 真机实证）
+UIApplication.shared.isIdleTimerDisabled = !paused
 }
 .onChange(of: subtitleOptionsToken) { _, _ in applySubtitleDefaults()}
 .onChange(of: selectedPrimaryOptionID) { _, _ in applyAVSubtitles()}
@@ -2137,19 +2174,25 @@ if paused { controlsVisible = true}
 .onChange(of: avModel.videoIsLandscape, initial: true) { _, isLandscape in
 // 电平触发（含初始值）：判定在页面出现之前就已置位时，边沿触发永远等不到变化——
 // 1.2.1「点开 16:9 不自动横屏」的根因之一。写上下文给呈现控制器，再发 geometry 请求补位
-guard !isMPV else { return}
-orientationContext?.aspectLandscape = isLandscape
+guard !isMPV, !orientationLocked else { return}
 OrientationHelper.setPlaybackAspect(isLandscape)
 }
 .onChange(of: mpvModel.videoIsLandscape, initial: true) { _, isLandscape in
-guard isMPV else { return}
-orientationContext?.aspectLandscape = isLandscape
+guard isMPV, !orientationLocked else { return}
 OrientationHelper.setPlaybackAspect(isLandscape)
 }
 .onAppear {
 // 页面（重新）出现时按当前判定再校正一次方向
+guard !orientationLocked else { return }
 let current = isMPV ? mpvModel.videoIsLandscape : avModel.videoIsLandscape
-orientationContext?.aspectLandscape = current
+OrientationHelper.setPlaybackAspect(current)
+}
+.onChange(of: scenePhase) { _, phase in
+// 回到前台时用当前裁决重申一次方向：后台期间系统可能复位呈现，
+// 只靠出现/判定边沿的一次性调用会让画面停在旧方向（1.4.1 真机实证）
+guard phase == .active, !orientationLocked else { return }
+guard !orientationLocked else { return }
+let current = isMPV ? mpvModel.videoIsLandscape : avModel.videoIsLandscape
 OrientationHelper.setPlaybackAspect(current)
 }
 .sheet(isPresented: $showAVSubtitlePanel) {
@@ -2201,6 +2244,27 @@ stillProvider: stillProvider)
 }
 }
 
+/// 播放页状态簇：当前时间＋电量，位于顶栏右侧、与控件同显同隐（用户 2026-11-07 追加）
+private var statusCluster: some View {
+    HStack(spacing: 10) {
+        TimelineView(.periodic(from: Date(), by: 20)) { context in
+            Text(context.date, format: .dateTime.hour().minute())
+        }
+        HStack(spacing: 4) {
+            if deviceStatus.batteryLevel >= 0 {
+                Text("\(Int(deviceStatus.batteryLevel * 100))%")
+            }
+            Image(systemName: deviceStatus.batterySymbol)
+                .font(.system(size: 15))
+        }
+        .foregroundStyle(deviceStatus.isCharging ? Color.green : Color.white)
+    }
+    .font(.system(size: 13, weight: .medium))
+    .foregroundStyle(.white)
+    .shadow(color: .black.opacity(0.55), radius: 4, y: 1)
+    .padding(.top, 13)
+}
+
 // MARK: 顶部栏（标题＋关闭＋提示/报错）——与控件同显同隐
 
 private var topChrome: some View {
@@ -2220,6 +2284,7 @@ Text(title)
 Spacer()
 VStack(alignment:.trailing, spacing: 8) {
 HStack(spacing: 8) {
+statusCluster
 if !isMPV {
 if showPrevNextButtons, let onPrevious {
 chromeButton("backward.end.fill", label: "上一集") { onPrevious()}
@@ -2234,6 +2299,9 @@ chromeButton("list.bullet", label: "选集") { showAVEpisodes = true}
 // 不再出现「播了半天找不到字幕按钮」
 chromeButton("captions.bubble.fill", label: "字幕") { showAVSubtitlePanel = true}
 }
+chromeButton("rotate.right", label: "翻转") { OrientationHelper.flipLandscape()}
+chromeButton("lock.rotation", label: orientationLocked ? "解锁方向" : "锁定方向",
+isActive: orientationLocked) { toggleOrientationLock()}
 // 关闭键：裸 glyph＋44pt 点击域，与新控件层统一（渐变由控件层提供，父级不叠玻璃圆）
 Button {
 onClose()
@@ -2264,7 +2332,7 @@ Spacer()
 .padding(.top, 8)
 }
 
-private func chromeButton(_ systemImage: String, label: String,
+private func chromeButton(_ systemImage: String, label: String, isActive: Bool = false,
 action: @escaping () -> Void) -> some View {
 Button {
 action()
@@ -2274,9 +2342,19 @@ Image(systemName: systemImage)
 .font(.system(size: 14, weight:.semibold))
 .foregroundStyle(.white)
 .frame(width: 34, height: 34)
-.glassEffect(.regular.interactive(), in: Circle())
+.chromeGlass(in: Circle(), interactive: true, active: isActive)
 }
 .accessibilityLabel(label)
+}
+
+/// 方向锁定开关：锁定时冻结在当前方向（裁决守卫配合），解锁后按当前裁决重申一次
+private func toggleOrientationLock() {
+orientationLocked.toggle()
+OrientationHelper.setOrientationLocked(orientationLocked)
+if !orientationLocked {
+let current = isMPV ? mpvModel.videoIsLandscape : avModel.videoIsLandscape
+OrientationHelper.setPlaybackAspect(current)
+}
 }
 
 private func chip(_ text: String) -> some View {
@@ -2287,7 +2365,7 @@ Text(text)
 .multilineTextAlignment(.trailing)
 .padding(.horizontal, 12)
 .padding(.vertical, 8)
-.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12, style:.continuous))
+.chromeGlass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 // 提示/报错文本再长也只在本栏内换行，不许把顶栏撑宽（1.2.1）
 .frame(maxWidth: 260, alignment:.trailing)
 }
@@ -2306,7 +2384,7 @@ Label("跳过片尾", systemImage: "forward.end.fill")
 .foregroundStyle(.white)
 .padding(.horizontal, 16)
 .padding(.vertical, 10)
-.glassEffect(.regular.interactive(), in: Capsule())
+.chromeGlass(in: Capsule(), interactive: true)
 }
 }
 .padding(.trailing, 16)
@@ -2339,6 +2417,7 @@ let options: [NativeSubtitleOption]
 @Binding var secondaryID: String?
 let onLoadLocalSubtitle: () -> Void
 @Environment(\.dismiss) private var dismiss
+@Environment(\.verticalSizeClass) private var verticalSizeClass
 @State private var tab: Tab = .primary
 
 private enum Tab { case primary, secondary}
@@ -2412,7 +2491,7 @@ Button("完成") { dismiss()}
 }
 }
 .preferredColorScheme(.dark)
-.presentationDetents([.medium,.large])
+.presentationDetents(PanelDetents.set(isLandscape: verticalSizeClass == .compact, portraitLarge: false))
 }
 
 private var selectedID: String? {
