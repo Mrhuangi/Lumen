@@ -300,7 +300,7 @@ struct LibraryView: View {
             scrape.ensureAll(items: store.items)
             autoplayIfNeeded()
         }
-        .fullScreenCover(item: $activeItem) { item in
+        .playerCover(item: $activeItem) { item in
             PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
@@ -1012,7 +1012,7 @@ struct SeriesView: View {
         }
         .navigationTitle(show)
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $activeItem) { item in
+        .playerCover(item: $activeItem) { item in
             PlaybackFlow(item: item, store: store, scrape: scrape)
         }
         .task { scrape.ensureAll(items: store.items) }
@@ -1339,7 +1339,7 @@ struct LibraryItemsGridPage: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $activeItem) { item in
+        .playerCover(item: $activeItem) { item in
             PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
@@ -1390,7 +1390,7 @@ struct LibraryContinueGridPage: View {
         }
         .navigationTitle("继续观看")
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $activeItem) { item in
+        .playerCover(item: $activeItem) { item in
             PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
@@ -1427,7 +1427,7 @@ struct SearchView: View {
             .navigationTitle("搜索")
         }
         .searchable(text: $query, prompt: "搜索片名")
-        .fullScreenCover(item: $activeItem) { item in
+        .playerCover(item: $activeItem) { item in
             PlaybackFlow(item: item, store: store, scrape: scrape)
         }
     }
@@ -1670,6 +1670,26 @@ struct SettingsView: View {
 
 struct LogView: View {
     @State private var lines: [String] = []
+    @State private var expanded: Set<Int> = []
+
+    /// 日志行格式固定为「MM-dd HH:mm:ss [分类] 正文」，拆开三段展示
+    private struct Entry {
+        var time: String
+        var tag: String
+        var message: String
+    }
+
+    private func parse(_ line: String) -> Entry {
+        guard let open = line.firstIndex(of: "["),
+              let close = line.firstIndex(of: "]") else {
+            return Entry(time: "", tag: "", message: line)
+        }
+        let time = String(line[..<open]).trimmingCharacters(in: .whitespaces)
+        let tag = String(line[line.index(after: open)..<close])
+        let message = String(line[line.index(after: close)...])
+            .trimmingCharacters(in: .whitespaces)
+        return Entry(time: time, tag: tag, message: message)
+    }
 
     var body: some View {
         List {
@@ -1677,10 +1697,40 @@ struct LogView: View {
                 Text("暂无日志")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                    Text(line)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
+                // 收纳成紧凑列表（用户 2026-11-09：原始日志整页糊满、没有高级感）：
+                // 最新在前，一行一条只露时间和一行摘要，点开才展开全文
+                ForEach(Array(lines.enumerated().reversed()), id: \.offset) { index, line in
+                    let entry = parse(line)
+                    let isOpen = expanded.contains(index)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            if !entry.time.isEmpty {
+                                Text(entry.time)
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
+                            if !entry.tag.isEmpty {
+                                Text(entry.tag)
+                                    .font(.caption2.weight(.semibold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                            }
+                            Spacer()
+                            Image(systemName: isOpen ? "chevron.up" : "chevron.down")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Text(entry.message)
+                            .font(.caption)
+                            .lineLimit(isOpen ? nil : 1)
+                            .truncationMode(.tail)
+                            .textSelection(.enabled)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if isOpen { expanded.remove(index) } else { expanded.insert(index) }
+                    }
                 }
             }
         }
@@ -2291,18 +2341,27 @@ VStack(alignment:.trailing, spacing: 8) {
 HStack(spacing: 8) {
 statusCluster
 if !isMPV {
+// 原生路的次级功能收进「更多」菜单（用户 2026-11-09：展示太多、收纳起来）：
+// 顶栏只留状态簇与翻转、锁定、关闭，上一集/下一集/选集/字幕都在菜单里，功能一个不少
+Menu {
 if showPrevNextButtons, let onPrevious {
-chromeButton("backward.end.fill", label: "上一集") { onPrevious()}
+Button { onPrevious(); poke()} label: { Label("上一集", systemImage: "backward.end.fill")}
 }
 if showPrevNextButtons, let onNext {
-chromeButton("forward.end.fill", label: "下一集") { onNext()}
+Button { onNext(); poke()} label: { Label("下一集", systemImage: "forward.end.fill")}
 }
 if episodes.count > 1 {
-chromeButton("list.bullet", label: "选集") { showAVEpisodes = true}
+Button { showAVEpisodes = true; poke()} label: { Label("选集", systemImage: "list.bullet")}
 }
-// 字幕键常驻（M5）：选项要等重封装扫完才到，先灰着也要有入口，
-// 不再出现「播了半天找不到字幕按钮」
-chromeButton("captions.bubble.fill", label: "字幕") { showAVSubtitlePanel = true}
+Button { showAVSubtitlePanel = true; poke()} label: { Label("字幕", systemImage: "captions.bubble.fill")}
+} label: {
+Image(systemName: "ellipsis.circle")
+.font(.system(size: 14, weight:.semibold))
+.foregroundStyle(.white)
+.frame(width: 34, height: 34)
+.chromeGlass(in: Circle(), interactive: true)
+}
+.accessibilityLabel("更多")
 }
 chromeButton("rotate.right", label: "翻转") { OrientationHelper.flipLandscape()}
 chromeButton("lock.rotation", label: orientationLocked ? "解锁方向" : "锁定方向",
@@ -2320,11 +2379,11 @@ Image(systemName: "xmark")
 }
 .accessibilityLabel("关闭")
 }
-if let currentNotice {
-chip(currentNotice)
-}
 if let activeError {
 chip(activeError)
+} else if let currentNotice {
+// 提示与报错同时只挂一条（报错优先），不再上下叠两张
+chip(currentNotice)
 }
 }
 }
