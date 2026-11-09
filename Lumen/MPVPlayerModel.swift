@@ -800,6 +800,9 @@ final class MPVPlayerModel: ObservableObject {
     private func performTrackRefresh() {
         guard let vc = controller else { return }
         let raw = vc.readTracks()
+        // 播完后引擎已卸片，轨道查询为空：保留上一次的列表，不让面板变空。
+        // load() 时已先清过数组，所以真正无轨的文件这里仍为空，不会残留旧片轨道。
+        guard !raw.isEmpty else { return }
         let oldAudio = audioTracks
         audioTracks = raw.filter { $0.type == "audio" }.map { info in
             var track = MPVTrack(id: info.id, type: info.type, lang: info.lang, title: info.title,
