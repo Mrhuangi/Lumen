@@ -15,6 +15,9 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5.5", date: "2026-11-09", items: [
+            Item(category: "修复", text: "设置中「液态玻璃」开关不显示、无法关闭：开关已移回外观区独立成行，关闭后播放页按钮改为磨砂材质加细边框"),
+        ]),
         Entry(version: "1.5.4", date: "2026-11-09", items: [
             Item(category: "修复", text: "片子播完后打开字幕或音轨面板不再显示空白：播完保留上一份轨道列表"),
             Item(category: "优化", text: "横屏字幕面板更紧凑：已选轨道行直接可见，不用再往下翻"),
