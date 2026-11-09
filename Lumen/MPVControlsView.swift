@@ -1089,6 +1089,27 @@ extension View {
 
 // MARK: - 字幕面板（主/副双字幕：分组全列表＋摘要头＋加载本地字幕＋字号）
 
+/// 面板自绘标题栏（标题＋完成按钮）：1.5.2 门禁实测，横屏浮层里 NavigationStack 的
+/// toolbar 完成按钮在 Pro Max 上会被裁到屏外；改走面板内自绘标题栏，位置由面板自身布局保证。
+/// 四个面板共用，竖屏 sheet 与横屏浮层同一套外观。
+private struct PanelTitleBar: View {
+    let title: String
+    let onDone: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.headline)
+            Spacer()
+            Button("完成") { onDone() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+}
+
 struct SubtitlePanelView: View {
     @ObservedObject var model: MPVPlayerModel
     let onLoadLocalSubtitle: () -> Void
@@ -1108,18 +1129,10 @@ struct SubtitlePanelView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                header
-                trackList
-            }
-            .navigationTitle("字幕")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismissPanel() }
-                }
-            }
+        VStack(spacing: 0) {
+            PanelTitleBar(title: "字幕") { dismissPanel() }
+            header
+            trackList
         }
         .preferredColorScheme(.dark)
         .presentationDetents(PanelDetents.set(isLandscape: isLandscape,
@@ -1161,8 +1174,7 @@ struct SubtitlePanelView: View {
     }
 
     private var trackList: some View {
-        ScrollViewReader { proxy in
-            List {
+        List {
                 Section {
                     offRow
                 }
@@ -1200,24 +1212,8 @@ struct SubtitlePanelView: View {
                     }
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 }
-            }
-            .listStyle(.plain)
-            .onAppear { scrollToSelection(proxy, animated: false) }
-            .onChange(of: tab) { _, _ in scrollToSelection(proxy, animated: true) }
         }
-    }
-
-    private func scrollToSelection(_ proxy: ScrollViewProxy, animated: Bool) {
-        let target = selectedID ?? -1
-        if animated {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                proxy.scrollTo(target, anchor: .center)
-            }
-        } else {
-            DispatchQueue.main.async {
-                proxy.scrollTo(target, anchor: .center)
-            }
-        }
+        .listStyle(.plain)
     }
 
     private var offRow: some View {
@@ -1338,7 +1334,8 @@ struct AudioPanelView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            PanelTitleBar(title: "音轨") { dismissPanel() }
             List {
                 ForEach(model.audioTracks) { track in
                     Button {
@@ -1374,13 +1371,6 @@ struct AudioPanelView: View {
                 }
             }
             .listStyle(.plain)
-            .navigationTitle("音轨")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismissPanel() }
-                }
-            }
         }
         .preferredColorScheme(.dark)
         .presentationDetents(PanelDetents.set(isLandscape: isLandscape,
@@ -1407,7 +1397,8 @@ struct EpisodePanelView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            PanelTitleBar(title: "选集") { dismissPanel() }
             List(episodes) { item in
                 Button {
                     onSelect(item)
@@ -1446,13 +1437,6 @@ struct EpisodePanelView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .navigationTitle("选集")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismissPanel() }
-                }
-            }
         }
         .preferredColorScheme(.dark)
         .presentationDetents(PanelDetents.set(isLandscape: isLandscape,
@@ -1481,7 +1465,8 @@ struct PlayerMoreSettingsView: View {
     @AppStorage(PlayerSettings.showSeekButtonsKey) private var showSeekButtons = true
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            PanelTitleBar(title: "更多设置") { dismissPanel() }
             Form {
                 Section {
                     Toggle("原生模式", isOn: $nativeMode)
@@ -1510,13 +1495,6 @@ struct PlayerMoreSettingsView: View {
                 Section("按钮") {
                     Toggle("上一集 / 下一集按钮", isOn: $showPrevNextButtons)
                     Toggle("快退 / 快进按钮", isOn: $showSeekButtons)
-                }
-            }
-            .navigationTitle("更多设置")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismissPanel() }
                 }
             }
         }
