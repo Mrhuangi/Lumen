@@ -15,6 +15,10 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5.3", date: "2026-11-09", items: [
+            Item(category: "修复", text: "横屏字幕面板不显示内封字幕列表：面板改回与音轨面板相同的直列结构，不再自动滚动定位"),
+            Item(category: "修复", text: "横屏下面板完成按钮在大屏上被裁切：四个面板改用自绘标题栏，按钮位置不再依赖系统工具栏"),
+        ]),
         Entry(version: "1.5.2", date: "2026-11-09", items: [
             Item(category: "修复", text: "打开字幕、音轨、选集或更多设置面板时应用闪退：面板入口函数误写成自调用，现已修正为正常打开面板"),
         ]),
