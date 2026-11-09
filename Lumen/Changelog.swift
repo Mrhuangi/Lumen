@@ -15,6 +15,10 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5.4", date: "2026-11-09", items: [
+            Item(category: "修复", text: "片子播完后打开字幕或音轨面板不再显示空白：播完保留上一份轨道列表"),
+            Item(category: "优化", text: "横屏字幕面板更紧凑：已选轨道行直接可见，不用再往下翻"),
+        ]),
         Entry(version: "1.5.3", date: "2026-11-09", items: [
             Item(category: "修复", text: "横屏字幕面板不显示内封字幕列表：面板改回与音轨面板相同的直列结构，不再自动滚动定位"),
             Item(category: "修复", text: "横屏下面板完成按钮在大屏上被裁切：四个面板改用自绘标题栏，按钮位置不再依赖系统工具栏"),
