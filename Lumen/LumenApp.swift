@@ -1,11 +1,16 @@
 import SwiftUI
 import UIKit
 
-/// 方向锁：平时锁竖屏，进播放器后解锁，横屏视频自动转横屏全屏。
-/// 1.4 起播放页回到系统 .fullScreenCover 呈现，方向只由 OrientationHelper
-/// 的 geometry 请求与这里的全局锁驱动：非播放页锁竖屏，播放期间按判定放行。
+/// 方向：平时锁竖屏，进播放器后放行，横屏视频自动转横屏全屏。
+/// 1.5.5 起播放页由 PlayerHostingController 呈现：支持方向掩码与方向锁定
+/// 都由呈现出来的控制器直接向系统声明（掩码读 orientationLock、锁定读
+/// playerOrientationLocked），OrientationHelper 只负责维护这两个状态并发请求。
 final class AppDelegate: NSObject, UIApplicationDelegate {
     static var orientationLock: UIInterfaceOrientationMask = .portrait
+    /// 用户在播放页手动开启的方向锁定：呈现控制器据此向系统声明
+    /// prefersInterfaceOrientationLocked，系统把界面冻结在当前方向，
+    /// 不再靠收窄掩码间接实现（旧办法在真机上锁不住，1.5.5 改走系统原生）。
+    static var playerOrientationLocked = false
 
     func application(_ application: UIApplication,
                      supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
@@ -44,6 +49,8 @@ enum OrientationHelper {
 
     static func lockToPortrait() {
         AppDelegate.orientationLock = .portrait
+        // 退出播放页时清掉方向锁定状态，避免下次打开播放器带着上次的锁定
+        AppDelegate.playerOrientationLocked = false
         request(.portrait, verify: false)
     }
 
@@ -74,6 +81,10 @@ enum OrientationHelper {
     /// 只发几何请求、不改裁决：后续裁决重申用的是 .landscape 宽掩码，包含当前侧，
     /// 不会把翻转打回去；新视频裁决变化时方向仍跟新裁决走。
     static func flipLandscape() {
+        if AppDelegate.playerOrientationLocked {
+            AppLog.add("播放", "方向已锁定，翻转忽略")
+            return
+        }
         AppDelegate.orientationLock = .allButUpsideDown
         let current = activeScene()?.interfaceOrientation ?? .portrait
         let target: UIInterfaceOrientationMask = current == .landscapeLeft ? .landscapeRight : .landscapeLeft
@@ -81,17 +92,15 @@ enum OrientationHelper {
         request(target, verify: true)
     }
 
-    /// 方向锁定：锁定→只允许当前方向，自动裁决不再改向；解锁→恢复播放放行，
-    /// 裁决重申由调用方随后触发。
+    /// 方向锁定：直接走系统原生锁定——呈现控制器（PlayerHostingController）的
+    /// prefersInterfaceOrientationLocked 读 playerOrientationLocked，切换后通知
+    /// 系统重新评估该偏好，界面即冻结在当前方向；掩码保持裁决原样不动，
+    /// 解锁后由调用方按当前裁决重申一次方向。
     static func setOrientationLocked(_ locked: Bool) {
-        if locked {
-            let current = activeScene()?.interfaceOrientation ?? .portrait
-            AppDelegate.orientationLock = UIInterfaceOrientationMask(rawValue: UInt(1 << current.rawValue))
-        } else {
-            AppDelegate.orientationLock = .allButUpsideDown
-        }
+        AppDelegate.playerOrientationLocked = locked
+        topViewController()?.setNeedsUpdateOfPrefersInterfaceOrientationLocked()
         refresh()
-        AppLog.add("播放", "方向锁定 \(locked ? "开" : "关")")
+        AppLog.add("播放", "方向锁定 \(locked ? "开" : "关")（系统原生锁定）")
     }
 
     private static var verifyRetryPending = false
@@ -128,6 +137,7 @@ enum OrientationHelper {
     private static func refresh() {
         let top = topViewController()
         top?.setNeedsUpdateOfSupportedInterfaceOrientations()
+        top?.setNeedsUpdateOfPrefersInterfaceOrientationLocked()
         let root = activeScene()?.keyWindow?.rootViewController
         if let root, root !== top {
             root.setNeedsUpdateOfSupportedInterfaceOrientations()
