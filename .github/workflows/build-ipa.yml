@@ -179,6 +179,11 @@ jobs:
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player.png" || true
             sleep 5
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player2.png" || true
+            # player3（#93/#95 教训）：再等 8 秒截一张，视频约 20–24 秒、深处第二条字幕 cue 内，
+            # 专用于判定字幕跨过第一条 cue 间隙后是否持续渲染；player2 落在 12–13 秒间隙里时无字幕是正确的，
+            # 不能当作字幕缺失的证据。
+            sleep 8
+            xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-player3.png" || true
             for PANEL in subtitle audio episodes settings; do
               xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
               sleep 1
