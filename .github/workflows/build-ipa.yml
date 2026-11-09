@@ -93,6 +93,7 @@ jobs:
 
       - name: Simulator smoke test (iOS 27, dual size)
         continue-on-error: true
+        timeout-minutes: 45
         run: |
           set -x
           SIM_APP=$(find build-sim/Build/Products/Debug-iphonesimulator -maxdepth 1 -name "*.app" | head -n 1)
@@ -110,11 +111,34 @@ jobs:
           fi
           export FFMPEG
           echo "ffmpeg resolved to: $FFMPEG"
+          # 模拟器启动必须有界：bootstatus -b 会无限等下去（#79 实测在
+          # iPhone 17e 上卡 6 小时，日志最后一条就是它）。改走轮询：
+          # 180 秒内等不到 Booted 就关机＋抹除后重试一次，再不行跳过该机型、不卡死整步。
+          wait_booted() {
+            local udid="$1" waited=0
+            while [ $waited -lt 180 ]; do
+              if xcrun simctl list devices 2>/dev/null | grep "$udid" | grep -q "(Booted)"; then return 0; fi
+              sleep 5; waited=$((waited + 5))
+            done
+            return 1
+          }
+          boot_sim() {
+            local udid="$1"
+            xcrun simctl boot "$udid" 2>/dev/null || true
+            if wait_booted "$udid"; then return 0; fi
+            echo "Simulator $udid did not boot, retrying after erase" >&2
+            xcrun simctl shutdown "$udid" 2>/dev/null || true
+            xcrun simctl erase "$udid" 2>/dev/null || true
+            xcrun simctl boot "$udid" 2>/dev/null || true
+            if wait_booted "$udid"; then return 0; fi
+            echo "SKIP: simulator $udid failed to boot" >&2
+            return 1
+          }
+          SMOKE_OK=0
           run_smoke() {
             UDID="$1"; SLUG="$2"
             echo "=== Smoke test: $SLUG ($UDID) ==="
-            xcrun simctl boot "$UDID" || true
-            xcrun simctl bootstatus "$UDID" -b
+            if ! boot_sim "$UDID"; then return 0; fi
             xcrun simctl install "$UDID" "$SIM_APP"
             DATA=$(xcrun simctl get_app_container "$UDID" com.mrhuangi.lumen data)
             echo "Data container: $DATA"
@@ -159,6 +183,7 @@ jobs:
             find "$DATA/Documents" -type f > "sim-evidence/documents-$SLUG.txt" || true
             PREFS="$DATA/Library/Preferences/com.mrhuangi.lumen.plist"
             if [ -f "$PREFS" ]; then plutil -p "$PREFS" > "sim-evidence/preferences-$SLUG.txt" || true; fi
+            SMOKE_OK=$((SMOKE_OK + 1))
           }
           DEVICES=$(xcrun simctl list devices available)
           SMALL=$(echo "$DEVICES" | grep "iPhone SE" | head -n 1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
@@ -172,6 +197,7 @@ jobs:
             UDID=$(echo "$DEVICES" | grep -m1 "iPhone" | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
             run_smoke "$UDID" single
           fi
+          if [ "$SMOKE_OK" -eq 0 ]; then echo "ERROR: no simulator booted, smoke evidence is empty" >&2; exit 1; fi
 
       - name: Upload simulator evidence
         if: always()
