@@ -146,10 +146,11 @@ struct MPVControlsView: View {
         } else if showEpisodes {
             EpisodePanelView(episodes: episodes, currentID: currentEpisodeID,
                              stillProvider: stillProvider,
-                             onDone: { showEpisodes = false }) { item in
-                showEpisodes = false
-                onSelectEpisode(item)
-            }
+                             onSelect: { item in
+                                 showEpisodes = false
+                                 onSelectEpisode(item)
+                             },
+                             onDone: { showEpisodes = false })
         } else if showMoreSettings {
             PlayerMoreSettingsView(onDone: { showMoreSettings = false })
         }
