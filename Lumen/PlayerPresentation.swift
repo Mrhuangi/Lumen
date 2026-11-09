@@ -66,7 +66,7 @@ struct PlayerCover<Item: Identifiable>: UIViewControllerRepresentable {
         var presentedItemID: Item.ID?
         private var attempts = 0
 
-        func present(item: Item, content: (Item) -> PlaybackFlow,
+        func present(item: Item, content: @escaping (Item) -> PlaybackFlow,
                      from anchor: UIViewController, binding: Binding<Item?>) {
             guard presented == nil else { return }
             guard anchor.view.window != nil else {
