@@ -84,7 +84,7 @@ struct MPVControlsView: View {
                     outroButton(wide: wide)
                 }
                 bottomStack(wide: wide, insets: geo.safeAreaInsets)
-                if geo.size.width > geo.size.height {
+                if geo.size.width > geo.size.height, panelOpen {
                     landscapePanelLayer(height: geo.size.height * 0.62)
                 }
             }
@@ -156,7 +156,9 @@ struct MPVControlsView: View {
         }
     }
 
-    /// 横屏浮层容器：底部对齐、0.62 高、圆角＋系统底色；无面板打开时为空视图、不挡触摸。
+    /// 横屏浮层容器：底部对齐、0.62 高、圆角＋系统底色。仅在面板打开时才进层级——
+    /// 未打开时这一层根本不存在，不渲染、不占位、更不会干扰底部按钮的点击
+    /// （1.5.4 真机上底部按钮点了没反应，嫌疑最大的就是这层空浮层，1.5.5 直接消除）。
     private func landscapePanelLayer(height: CGFloat) -> some View {
         landscapePanel
             .frame(height: height, alignment: .top)
