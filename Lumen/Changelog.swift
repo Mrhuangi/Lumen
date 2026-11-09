@@ -15,6 +15,9 @@ enum Changelog {
     }
 
     static let entries: [Entry] = [
+        Entry(version: "1.5.2", date: "2026-11-09", items: [
+            Item(category: "修复", text: "打开字幕、音轨、选集或更多设置面板时应用闪退：面板入口函数误写成自调用，现已修正为正常打开面板"),
+        ]),
         Entry(version: "1.5.1", date: "2026-11-09", items: [
             Item(category: "修复", text: "横屏下面板仍占满全屏：现改为底部半屏浮层，画面上半部分保持可见"),
             Item(category: "修复", text: "打开面板过快时音轨或字幕列表可能为空：打开面板前先刷新轨道信息"),
