@@ -128,10 +128,10 @@ struct MPVControlsView: View {
 
     /// 打开面板的统一入口：音轨/字幕面板先刷一次轨道信息（选中轨 profile 这时多半已可读，
     /// 全景声标注与列表内容追上），再打开面板——避免开屏瞬间列表为空（1.5 门禁实测）。
-    private func openSubtitlePanel() { model.refreshTrackInfoForMenu(); openSubtitlePanel() }
-    private func openAudioPanel() { model.refreshTrackInfoForMenu(); openAudioPanel() }
-    private func openEpisodesPanel() { openEpisodesPanel() }
-    private func openSettingsPanel() { openSettingsPanel() }
+    private func openSubtitlePanel() { model.refreshTrackInfoForMenu(); showSubtitlePanel = true }
+    private func openAudioPanel() { model.refreshTrackInfoForMenu(); showAudioPanel = true }
+    private func openEpisodesPanel() { showEpisodes = true }
+    private func openSettingsPanel() { showMoreSettings = true }
 
     /// 横屏面板浮层（底部 0.62 高）：iPhone 横屏时系统 sheet 忽略 detents、直接全屏，
     /// 故横屏改走自绘底部浮层；竖屏继续用 sheet。面板内容与 sheet 共用同一视图，
