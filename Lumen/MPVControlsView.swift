@@ -291,6 +291,9 @@ struct MPVControlsView: View {
         let args = ProcessInfo.processInfo.arguments
         guard let idx = args.firstIndex(of: "-smokePanel"), idx + 1 < args.count else { return }
         try? await Task.sleep(for: .seconds(6))
+        // 门禁只用 25 秒测试片：续播点会越攒越靠后，面板截图常撞上片尾（引擎卸片后轨道查询为空）。
+        // 开面板前先跳回 5 秒处，保证截图时片子正在播、轨道在位。
+        model.seek(to: 5)
         switch args[idx + 1] {
         case "subtitle": openSubtitlePanel()
         case "audio": openAudioPanel()
@@ -1147,10 +1150,14 @@ struct SubtitlePanelView: View {
                 Text("副字幕").tag(Tab.secondary)
             }
             .pickerStyle(.segmented)
-            Text(summaryText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // 横屏浮层高度紧张：摘要行与轨道勾选是同一信息，横屏时省掉这一行，
+            // 把位置让给轨道列表（小屏上已选轨道行要能进框，不靠滚动）。
+            if !isLandscape {
+                Text(summaryText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             Divider()
         }
         .padding(.horizontal, 16)
