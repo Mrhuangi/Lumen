@@ -17,6 +17,10 @@ enum Changelog {
     static let entries: [Entry] = [
         Entry(version: "1.5.5", date: "2026-11-09", items: [
             Item(category: "修复", text: "设置中「液态玻璃」开关不显示、无法关闭：开关已移回外观区独立成行，关闭后播放页按钮改为磨砂材质加细边框"),
+            Item(category: "修复", text: "方向锁定按下没有效果：改为系统原生方向锁定，锁定时界面冻结在当前方向"),
+            Item(category: "修复", text: "横屏时底部按钮点击可能被面板浮层干扰：浮层改为仅在面板打开时出现"),
+            Item(category: "优化", text: "播放页顶栏收纳：原生模式的上一集、下一集、选集、字幕收进「更多」菜单，提示与报错同时只显示一条"),
+            Item(category: "优化", text: "错误日志改为紧凑列表：一行一条摘要，点开查看全文"),
         ]),
         Entry(version: "1.5.4", date: "2026-11-09", items: [
             Item(category: "修复", text: "片子播完后打开字幕或音轨面板不再显示空白：播完保留上一份轨道列表"),
