@@ -191,6 +191,16 @@ jobs:
             xcrun simctl launch "$UDID" com.mrhuangi.lumen -autoplayFirst -smokeBgCycle || true
             sleep 22
             xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-bgcycle.png" || true
+            xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
+            sleep 1
+            xcrun simctl launch "$UDID" com.mrhuangi.lumen -smokeSettings || true
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-settings.png" || true
+            xcrun simctl terminate "$UDID" com.mrhuangi.lumen || true
+            sleep 1
+            xcrun simctl launch "$UDID" com.mrhuangi.lumen -settings.liquidGlass false -autoplayFirst -smokePanel audio || true
+            sleep 16
+            xcrun simctl io "$UDID" screenshot "sim-evidence/sim-$SLUG-noglass.png" || true
             find "$DATA/Documents" -type f > "sim-evidence/documents-$SLUG.txt" || true
             PREFS="$DATA/Library/Preferences/com.mrhuangi.lumen.plist"
             if [ -f "$PREFS" ]; then plutil -p "$PREFS" > "sim-evidence/preferences-$SLUG.txt" || true; fi
