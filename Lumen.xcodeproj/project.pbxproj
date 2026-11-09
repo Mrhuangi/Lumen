@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		D000000000000000000000B1 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000001 /* LumenApp.swift */; };
+		D000000000000000000000B6 /* PlayerPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000017 /* PlayerPresentation.swift */; };
 		D000000000000000000000B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000002 /* ContentView.swift */; };
 		D000000000000000000000B3 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000003 /* PlayerView.swift */; };
 		D000000000000000000000B4 /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000004 /* PlayerModel.swift */; };
@@ -31,6 +32,7 @@
 
 /* Begin PBXFileReference section */
 		D00000000000000000000001 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenApp.swift; sourceTree = "<group>"; };
+		D00000000000000000000017 /* PlayerPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerPresentation.swift; sourceTree = "<group>"; };
 		D00000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D00000000000000000000003 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		D00000000000000000000004 /* PlayerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerModel.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				D00000000000000000000001 /* LumenApp.swift */,
+				D00000000000000000000017 /* PlayerPresentation.swift */,
 				D00000000000000000000002 /* ContentView.swift */,
 				D00000000000000000000003 /* PlayerView.swift */,
 				D00000000000000000000004 /* PlayerModel.swift */,
@@ -188,6 +191,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D000000000000000000000B1 /* LumenApp.swift in Sources */,
+				D000000000000000000000B6 /* PlayerPresentation.swift in Sources */,
 				D000000000000000000000B2 /* ContentView.swift in Sources */,
 				D000000000000000000000B3 /* PlayerView.swift in Sources */,
 				D000000000000000000000B4 /* PlayerModel.swift in Sources */,
