@@ -77,21 +77,26 @@ struct ContentView: View {
     @StateObject private var store = LibraryStore()
     @StateObject private var scrape = ScrapeStore()
     @AppStorage("appearance.mode") private var appearanceRaw = AppearanceMode.system.rawValue
+    @State private var selectedTab = "library"
 
     var body: some View {
-        TabView {
-            Tab("媒体库", systemImage: "film.stack") {
+        TabView(selection: $selectedTab) {
+            Tab("媒体库", systemImage: "film.stack", value: "library") {
                 LibraryView()
             }
-            Tab("文件源", systemImage: "folder") {
+            Tab("文件源", systemImage: "folder", value: "sources") {
                 SourcesView()
             }
-            Tab("设置", systemImage: "gearshape") {
+            Tab("设置", systemImage: "gearshape", value: "settings") {
                 SettingsView()
             }
-            Tab("搜索", systemImage: "magnifyingglass") {
+            Tab("搜索", systemImage: "magnifyingglass", value: "search") {
                 SearchView()
             }
+        }
+        .onAppear {
+            // 模拟器自测钩子：带 -smokeSettings 启动时直接停在设置页
+            if CommandLine.arguments.contains("-smokeSettings") { selectedTab = "settings" }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
         .environmentObject(store)
@@ -1570,9 +1575,9 @@ struct SettingsView: View {
                         ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
                             Text(mode.label).tag(mode.rawValue)
                         }
-                    Toggle("液态玻璃", isOn: $liquidGlass)
                     }
                     .pickerStyle(.segmented)
+                    Toggle("液态玻璃", isOn: $liquidGlass)
                     Text("播放器界面始终为深色，不受此设置影响。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
